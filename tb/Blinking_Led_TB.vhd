@@ -40,7 +40,7 @@ architecture Behavioral of Blinking_Led_TB is
     constant CLKS_PER_SEC : integer := 20;
     constant DESIRED_CLKS_PER_SEC : integer := 1;
     
-    signal r_clk : std_logic := '0';
+    signal r_clk_tb : std_logic := '0';
     signal r_led : std_logic := '0';
     
     component Blinking_Led
@@ -48,11 +48,11 @@ architecture Behavioral of Blinking_Led_TB is
         CLKS_PER_SEC : integer := 125000000;
         DESIRED_CLKS_PER_SEC : integer := 1);
       Port (
-        i_clk: in std_logic;
+        i_sys_clk: in std_logic;
         o_led: out std_logic);
     end component Blinking_Led;
 begin
-    r_clk <= not r_clk after 1 ns;
+    r_clk_tb <= not r_clk_tb after 1 ns;
 
     UUT : Blinking_Led
         generic map(
@@ -60,7 +60,7 @@ begin
             DESIRED_CLKS_PER_SEC => DESIRED_CLKS_PER_SEC
         )
         port map(
-            i_clk => r_clk,
+            i_sys_clk => r_clk_tb,
             o_led => r_led
         );
 end Behavioral;
