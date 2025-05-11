@@ -34,8 +34,8 @@ use IEEE.NUMERIC_STD.ALL;
 
 entity Binary_To_7Segment is
   Port (
+    i_clk : in std_logic;
     i_value : in std_logic_vector (3 downto 0);
-    i_enable : in std_logic;
     o_segment_a : out std_logic;
     o_segment_b : out std_logic;
     o_segment_c : out std_logic;
@@ -54,12 +54,19 @@ architecture Behavioral of Binary_To_7Segment is
                                               7x"47");
     signal r_value : integer range 0 to 15;
 begin
-    r_value <= to_integer(unsigned(i_value));
-    o_segment_a <= DATA_REPRESENTATION(r_value)(6) when i_enable = '1' else '0';
-    o_segment_b <= DATA_REPRESENTATION(r_value)(5) when i_enable = '1' else '0';
-    o_segment_c <= DATA_REPRESENTATION(r_value)(4) when i_enable = '1' else '0';
-    o_segment_d <= DATA_REPRESENTATION(r_value)(3) when i_enable = '1' else '0';
-    o_segment_e <= DATA_REPRESENTATION(r_value)(2) when i_enable = '1' else '0';
-    o_segment_f <= DATA_REPRESENTATION(r_value)(1) when i_enable = '1' else '0';
-    o_segment_g <= DATA_REPRESENTATION(r_value)(0) when i_enable = '1' else '0';
+
+    process (i_clk)
+    begin
+        if (rising_edge(i_clk)) then
+            r_value <= to_integer(unsigned(i_value));
+        end if;
+    end process;
+    
+    o_segment_a <= DATA_REPRESENTATION(r_value)(6);
+    o_segment_b <= DATA_REPRESENTATION(r_value)(5);
+    o_segment_c <= DATA_REPRESENTATION(r_value)(4);
+    o_segment_d <= DATA_REPRESENTATION(r_value)(3);
+    o_segment_e <= DATA_REPRESENTATION(r_value)(2);
+    o_segment_f <= DATA_REPRESENTATION(r_value)(1);
+    o_segment_g <= DATA_REPRESENTATION(r_value)(0);
 end Behavioral;

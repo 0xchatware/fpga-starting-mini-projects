@@ -59,8 +59,8 @@ architecture Behavioral of Counter_7Segment is
     end component Clock_Enable_Generator;
     component Binary_To_7Segment is
       Port (
+        i_clk : in std_logic;
         i_value : in std_logic_vector (3 downto 0);
-        i_enable : in std_logic;
         o_segment_a : out std_logic;
         o_segment_b : out std_logic;
         o_segment_c : out std_logic;
@@ -78,8 +78,8 @@ begin
             
     Segment_Inst : Binary_To_7Segment
         port map (
+            i_clk => i_sys_clk,
             i_value => r_value_7segment,
-            i_enable => '1',
             o_segment_a => o_segment_a,
             o_segment_b => o_segment_b,
             o_segment_c => o_segment_c,
