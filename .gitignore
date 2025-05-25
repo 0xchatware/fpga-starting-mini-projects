@@ -77,3 +77,5 @@ _xmsgs/
 # Vivado
 *.log
 *.jou
+*.str
+.Xil
