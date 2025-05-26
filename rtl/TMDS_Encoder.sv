@@ -30,22 +30,25 @@ module TMDS_Encoder(
     );
     
     logic [8:0] r_qm;
-    
     TM_Choice TM_Choice_Inst (
         .i_data(i_data),
         .o_qm(r_qm));
-        
-    reg [4:0] r_tally = 0;
+    
+    reg [4:0] r_tally;
+    reg [7:0] r_last_data;
+    bit r_first;
     int num_ones = 0;
-    int num_zeros = 0;
-    bit isInverted = 0;
     always@(posedge i_clk) begin
         if (i_rst) begin
             r_tally = 0;
             o_tmds = 0;
+            r_last_data = 8'bXXXX_XXXX;
+            r_first = 1;
         end
         else if (i_ve) begin
+            r_first = 1;
             r_tally = 0;
+            r_last_data = 8'bXXXX_XXXX;
             case (i_control)
                 2'b00: o_tmds = 10'b1101010100;
                 2'b01: o_tmds = 10'b0010101011;
@@ -54,19 +57,22 @@ module TMDS_Encoder(
             endcase
         end
         else begin
-            num_ones = $countbits(r_qm[8:0], 1'b1);
-            o_tmds[9] = 0;
-            if ((!r_tally[4] && num_ones > 4 && r_tally != 0) || (r_tally[4] && num_ones < 4)) begin
-                 o_tmds[9:0] = {1'b1, r_qm[8], ~r_qm[7:0]};
-                 num_ones = $countbits(o_tmds[9:0], 1'b1);
+            if (r_first || r_last_data != i_data) begin
+                num_ones = $countbits(r_qm[7:0], 1'b1);
+                if ((r_tally[4] == 0 && num_ones > 4 && r_tally != 0) || (r_tally[4] == 1 && num_ones < 4)) begin
+                     o_tmds[9:0] = {1'b1, r_qm[8], ~r_qm[7:0]};
+                end
+                else begin
+                    o_tmds[9:0] = {1'b0, r_qm};
+                end
+                num_ones = $countbits(o_tmds[9:0], 1'b1);
+                
+                r_tally = r_tally + num_ones - (10 - num_ones);
+                
+                num_ones = 0;
+                r_last_data = i_data;
+                r_first = 0;
             end
-            if (!r_tally[4]) begin // If positive
-                r_tally -= (10 - num_ones);
-            end
-            else begin // negative
-                r_tally += num_ones;
-            end
-            num_ones = 0;
         end
     end
     

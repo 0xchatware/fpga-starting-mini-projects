@@ -79,3 +79,7 @@ _xmsgs/
 *.jou
 *.str
 .Xil
+
+#Simulation
+*/__pycache__/
+*/sim_build/
