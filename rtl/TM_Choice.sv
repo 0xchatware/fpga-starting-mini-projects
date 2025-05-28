@@ -20,27 +20,26 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 
-module TM_Choice(
-    input wire [7:0] i_data,
-    output logic [8:0] o_qm     // intermidiate value
-    );
-    
-    int sum = 0; // between 0 to 7
-    always@(*) begin
-        sum = $countbits(i_data, 1'b1);
-        o_qm[0] = i_data[0];
-        if (sum > 4 || (sum == 4 && i_data[0] == 0)) begin
+    module TM_Choice(
+        input wire [7:0] i_data,
+        output logic [8:0] o_qm     // intermidiate value
+        );
+        
+        int sum; // between 0 to 7
+        logic[7:0] qm_data;
+        logic use_xnor;
+        always@(*) begin
+            sum = $countbits(i_data, 1'b1);
+            use_xnor = sum > 4 || (sum == 4 && i_data[0] == 0);
+            qm_data[0] = i_data[0];
             for (int i = 1; i < 8; i++) begin
-                o_qm[i] = ~(i_data[i] ^ o_qm[i-1]);
+                if (use_xnor) begin
+                    qm_data[i] = ~(i_data[i] ^ qm_data[i-1]);
+                end
+                else begin
+                    qm_data[i] = i_data[i] ^ qm_data[i-1];
+                end
             end
-            o_qm[8] = 0;
+            o_qm = {~use_xnor, qm_data};
         end
-        else begin
-            for (int i = 1; i < 8; i++) begin
-                o_qm[i] = i_data[i] ^ o_qm[i-1];
-            end
-            o_qm[8] = 1;
-        end
-        sum = 0;
-    end
-endmodule
+    endmodule

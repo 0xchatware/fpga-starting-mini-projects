@@ -63,7 +63,7 @@ module Video_Signal_Generator_TB();
         #CLK_PERIOD;
         reset = 0;
         
-        wait (fc == 5'h2);
+        wait (fc == 5'h1);
         $finish;
     end
 endmodule

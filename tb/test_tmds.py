@@ -57,9 +57,10 @@ async def test_tmds(dut):
     # use helper function to assert reset signal
     await reset(dut.i_rst,dut.i_clk)
 
+    print("First Test!")
     tally = 0
     for data in range(0b1111_1111 + 1):
-        await drive_data(dut, data, 0b00, 0)
+        await drive_data(dut, data, 0b00, 1)
         qm = await tm_choice(data)
         num_ones = await count_bits(qm & 0xFF)
         tmds = qm
@@ -68,11 +69,12 @@ async def test_tmds(dut):
         num_ones = await count_bits(tmds)
         num_zeros = 10 - num_ones
         tally += num_ones - num_zeros
-        assert dut.o_tmds.value.integer == tmds, f"For {bin(data)}.\n\t\tCurrent Tally is {dut.r_tally.value}.\n\t\tNum of Ones is {dut.num_ones.value}."
+        assert dut.o_tmds.value.integer == tmds, f"For {bin(data)}.\n\t\tCurrent Tally is {dut.r_tally.value}.\n\t\tNum of Ones is {dut.v_num_ones.value}."
     
+    print("Second Test!")
     control = 0
     for data in range(0b1111_1111 + 1):
-        await drive_data(dut, data, control, 0)
+        await drive_data(dut, data, control, 1)
         qm = await tm_choice(data)
         num_ones = await count_bits(qm & 0xFF)
         tmds = qm
@@ -81,11 +83,12 @@ async def test_tmds(dut):
         num_ones = await count_bits(tmds)
         num_zeros = 10 - num_ones
         tally += num_ones - num_zeros
-        assert dut.o_tmds.value.integer == tmds, f"For {bin(data)}.\n\t\tCurrent Tally is {dut.r_tally.value}.\n\t\tNum of Ones is {dut.num_ones.value}."
+        assert dut.o_tmds.value.integer == tmds, f"For {bin(data)}.\n\t\tCurrent Tally is {dut.r_tally.value}.\n\t\tNum of Ones is {dut.v_num_ones.value}."
         control = control+1 if control < 3 else 0
         
+    print("Third Test!")
     for data in range(0b1111_1111 + 1):
-        await drive_data(dut, data, control, 1)
+        await drive_data(dut, data, control, 0)
         tmds = 0
         match control:
             case 0: tmds = 0b1101010100

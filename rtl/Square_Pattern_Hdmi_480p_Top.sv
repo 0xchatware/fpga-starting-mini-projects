@@ -22,46 +22,46 @@
 
 module Square_Pattern_Hdmi_480p_Top(
     input i_sys_clk,
-    input i_reset,
-    output [2:0] tmdsp,
-    output [2:0] tmdsn,
-    output tmdsp_clk,
-    output tmdsn_clk
+    input i_sys_rst,
+    output [2:0] o_hdmi_tx_p,
+    output [2:0] o_hdmi_tx_n,
+    output o_hdmi_clk_p,
+    output o_hdmi_clk_n
     );
     
     parameter COORD_BITS = 10;
     parameter COLOUR_BITS = 4;
+    parameter FPS = 60;
     
     wire w_clk_250Mhz, w_clk_25Mhz;
     wire w_reset;
     wire w_clk_locked;
     clk_wiz_0 Clk_Generator_Inst
     (
-       // Clock out ports
        .o_clk_250MHz(w_clk_250MHz),
        .o_clk_25MHz(w_clk_25MHz),
-       // Status and control signals
-       .reset(i_reset),
-       .i_locked(),
-       // Clock in ports
+       .reset(i_sys_rst),
+       .i_locked(w_clk_locked),
        .i_clk(i_sys_clk));
     
     wire [COORD_BITS-1:0] w_sx, w_sy;
     wire w_hsync, w_vsync;
     wire w_de;
-    Display_480p Display_Inst (
-    .i_clk_pxl(w_clk_25MHz),
-    .i_reset(!w_clk_locked),
-    .o_sx(w_sx),
-    .o_sy(w_sy),
-    .o_hsync(w_hsync),
-    .o_vsync(w_vsync),
-    .o_de(w_de)
-    );
+    wire [$clog2(FPS)-1:0] w_fc;
+    logic r_nf;
+    Video_Signal_Generator Video_Signal_Inst(
+        .i_clk_pxl(w_clk_25MHz),
+        .i_reset(!w_clk_locked),
+        .o_sx(w_sx),
+        .o_sy(w_sy),
+        .o_hsync(w_hsync),
+        .o_vsync(w_vsync),
+        .o_de(w_de),
+        .o_nf(r_nf),
+        .o_fc(w_fc));
     
     logic v_square;
     logic [COLOUR_BITS-1:0] v_paint_r, v_paint_g, v_paint_b;
-    logic [COLOUR_BITS-1:0] v_display_r, v_display_g, v_display_b;
     always_comb begin
         v_square = (w_sx > 220 && w_sx < 420) && (w_sy > 140 && w_sy < 340);
         
@@ -69,15 +69,59 @@ module Square_Pattern_Hdmi_480p_Top(
         v_paint_r = (v_square) ? 4'hF : 4'h1;
         v_paint_g = (v_square) ? 4'hF : 4'h3;
         v_paint_b = (v_square) ? 4'hF : 4'h7;
+    end
+    
+    wire [9:0] w_tmds_red_buffer, w_tmds_blue_buffer, w_tmds_green_buffer;
+    wire [9:0] w_tmds_red, w_tmds_blue, w_tmds_green;
+    
+    TMDS_Encoder TMDS_Red (
+        .i_clk(w_clk_25MHz),
+        .i_rst(i_sys_rst),
+        .i_data(v_paint_r),
+        .i_control(2'b00),
+        .i_ve(w_de),
+        .o_tmds(w_tmds_red_buffer));
+    
+    TMDS_Encoder TMDS_Green (
+        .i_clk(w_clk_25MHz),
+        .i_rst(i_sys_rst),
+        .i_data(v_paint_g),
+        .i_control(2'b00),
+        .i_ve(w_de),
+        .o_tmds(w_tmds_green_buffer));
+    
+    TMDS_Encoder TMDS_Blue (
+        .i_clk(w_clk_25MHz),
+        .i_rst(i_sys_rst),
+        .i_data(v_paint_b),
+        .i_control({w_vsync, w_hsync}),
+        .i_ve(w_de),
+        .o_tmds(w_tmds_blue_buffer));
+    
+    TMDS_Serializer TMDS_Red_Serializer (
+        .i_clk_pixel(w_clk_25MHz),
+        .i_clk_5x(i_sys_clk),
+        .i_rst(i_sys_rst),
+        .i_tmds(w_tmds_red_buffer),
+        .o_tmds(w_tmds_red));
         
-        // Should be black during blanking.
-        v_display_r = (w_de) ? v_paint_r : 4'h0;
-        v_display_g = (w_de) ? v_paint_g : 4'h0;
-        v_display_b = (w_de) ? v_paint_b : 4'h0;
-    end
+    TMDS_Serializer TMDS_Green_Serializer (
+        .i_clk_pixel(w_clk_25MHz),
+        .i_clk_5x(i_sys_clk),
+        .i_rst(i_sys_rst),
+        .i_tmds(w_tmds_green_buffer),
+        .o_tmds(w_tmds_green));
     
-    always @(posedge w_clk_250MHz) begin
+    TMDS_Serializer TMDS_Blue_Serializer (
+        .i_clk_pixel(w_clk_25MHz),
+        .i_clk_5x(i_sys_clk),
+        .i_rst(i_sys_rst),
+        .i_tmds(w_tmds_blue_buffer),
+        .o_tmds(w_tmds_blue));
     
-    end
+    OBUFDS OBUFDS_blue (.I(w_tmds_blue), .O(o_hdmi_tx_p[0]), .OB(o_hdmi_tx_n[0]));
+    OBUFDS OBUFDS_green(.I(w_tmds_green), .O(o_hdmi_tx_p[1]), .OB(o_hdmi_tx_n[1]));
+    OBUFDS OBUFDS_red  (.I(w_tmds_red), .O(o_hdmi_tx_p[2]), .OB(o_hdmi_tx_n[2]));
+    OBUFDS OBUFDS_clock(.I(w_clk_25MHz), .O(o_hdmi_clk_p), .OB(o_hdmi_clk_n));
     
 endmodule
