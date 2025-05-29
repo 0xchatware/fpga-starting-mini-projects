@@ -2,7 +2,7 @@
 // Copyright 2022-2024 Advanced Micro Devices, Inc. All Rights Reserved.
 // --------------------------------------------------------------------------------
 // Tool Version: Vivado v.2024.2 (win64) Build 5239630 Fri Nov 08 22:35:27 MST 2024
-// Date        : Fri May 23 10:13:37 2025
+// Date        : Wed May 28 22:34:00 2025
 // Host        : LAPTOP-H2TG1BH8 running 64-bit major release  (build 9200)
 // Command     : write_verilog -force -mode funcsim
 //               c:/Projects/fpga_mini_project_starter/ip/clk_wiz_0/clk_wiz_0_sim_netlist.v
@@ -15,39 +15,39 @@
 
 (* NotValidForBitStream *)
 module clk_wiz_0
-   (o_clk_250MHz,
-    o_clk_25MHz,
+   (o_clk_25MHz,
+    o_clk_125MHz,
     reset,
     i_locked,
     i_clk);
-  output o_clk_250MHz;
   output o_clk_25MHz;
+  output o_clk_125MHz;
   input reset;
   output i_locked;
   input i_clk;
 
   (* IBUF_LOW_PWR *) wire i_clk;
   wire i_locked;
-  wire o_clk_250MHz;
+  wire o_clk_125MHz;
   wire o_clk_25MHz;
   wire reset;
 
   clk_wiz_0_clk_wiz inst
        (.i_clk(i_clk),
         .i_locked(i_locked),
-        .o_clk_250MHz(o_clk_250MHz),
+        .o_clk_125MHz(o_clk_125MHz),
         .o_clk_25MHz(o_clk_25MHz),
         .reset(reset));
 endmodule
 
 module clk_wiz_0_clk_wiz
-   (o_clk_250MHz,
-    o_clk_25MHz,
+   (o_clk_25MHz,
+    o_clk_125MHz,
     reset,
     i_locked,
     i_clk);
-  output o_clk_250MHz;
   output o_clk_25MHz;
+  output o_clk_125MHz;
   input reset;
   output i_locked;
   input i_clk;
@@ -57,8 +57,8 @@ module clk_wiz_0_clk_wiz
   wire i_clk;
   wire i_clk_clk_wiz_0;
   wire i_locked;
-  wire o_clk_250MHz;
-  wire o_clk_250MHz_clk_wiz_0;
+  wire o_clk_125MHz;
+  wire o_clk_125MHz_clk_wiz_0;
   wire o_clk_25MHz;
   wire o_clk_25MHz_clk_wiz_0;
   wire reset;
@@ -84,23 +84,23 @@ module clk_wiz_0_clk_wiz
         .O(i_clk_clk_wiz_0));
   (* BOX_TYPE = "PRIMITIVE" *) 
   BUFG clkout1_buf
-       (.I(o_clk_250MHz_clk_wiz_0),
-        .O(o_clk_250MHz));
-  (* BOX_TYPE = "PRIMITIVE" *) 
-  BUFG clkout2_buf
        (.I(o_clk_25MHz_clk_wiz_0),
         .O(o_clk_25MHz));
   (* BOX_TYPE = "PRIMITIVE" *) 
+  BUFG clkout2_buf
+       (.I(o_clk_125MHz_clk_wiz_0),
+        .O(o_clk_125MHz));
+  (* BOX_TYPE = "PRIMITIVE" *) 
   PLLE2_ADV #(
     .BANDWIDTH("OPTIMIZED"),
-    .CLKFBOUT_MULT(8),
+    .CLKFBOUT_MULT(7),
     .CLKFBOUT_PHASE(0.000000),
     .CLKIN1_PERIOD(8.000000),
     .CLKIN2_PERIOD(0.000000),
-    .CLKOUT0_DIVIDE(4),
+    .CLKOUT0_DIVIDE(35),
     .CLKOUT0_DUTY_CYCLE(0.500000),
     .CLKOUT0_PHASE(0.000000),
-    .CLKOUT1_DIVIDE(40),
+    .CLKOUT1_DIVIDE(7),
     .CLKOUT1_DUTY_CYCLE(0.500000),
     .CLKOUT1_PHASE(0.000000),
     .CLKOUT2_DIVIDE(1),
@@ -129,8 +129,8 @@ module clk_wiz_0_clk_wiz
         .CLKIN1(i_clk_clk_wiz_0),
         .CLKIN2(1'b0),
         .CLKINSEL(1'b1),
-        .CLKOUT0(o_clk_250MHz_clk_wiz_0),
-        .CLKOUT1(o_clk_25MHz_clk_wiz_0),
+        .CLKOUT0(o_clk_25MHz_clk_wiz_0),
+        .CLKOUT1(o_clk_125MHz_clk_wiz_0),
         .CLKOUT2(NLW_plle2_adv_inst_CLKOUT2_UNCONNECTED),
         .CLKOUT3(NLW_plle2_adv_inst_CLKOUT3_UNCONNECTED),
         .CLKOUT4(NLW_plle2_adv_inst_CLKOUT4_UNCONNECTED),

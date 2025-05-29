@@ -2,7 +2,7 @@
 -- Copyright 2022-2024 Advanced Micro Devices, Inc. All Rights Reserved.
 -- --------------------------------------------------------------------------------
 -- Tool Version: Vivado v.2024.2 (win64) Build 5239630 Fri Nov 08 22:35:27 MST 2024
--- Date        : Fri May 23 10:13:37 2025
+-- Date        : Wed May 28 22:34:00 2025
 -- Host        : LAPTOP-H2TG1BH8 running 64-bit major release  (build 9200)
 -- Command     : write_vhdl -force -mode funcsim
 --               c:/Projects/fpga_mini_project_starter/ip/clk_wiz_0/clk_wiz_0_sim_netlist.vhdl
@@ -17,8 +17,8 @@ library UNISIM;
 use UNISIM.VCOMPONENTS.ALL;
 entity clk_wiz_0_clk_wiz is
   port (
-    o_clk_250MHz : out STD_LOGIC;
     o_clk_25MHz : out STD_LOGIC;
+    o_clk_125MHz : out STD_LOGIC;
     reset : in STD_LOGIC;
     i_locked : out STD_LOGIC;
     i_clk : in STD_LOGIC
@@ -29,7 +29,7 @@ architecture STRUCTURE of clk_wiz_0_clk_wiz is
   signal clkfbout_buf_clk_wiz_0 : STD_LOGIC;
   signal clkfbout_clk_wiz_0 : STD_LOGIC;
   signal i_clk_clk_wiz_0 : STD_LOGIC;
-  signal o_clk_250MHz_clk_wiz_0 : STD_LOGIC;
+  signal o_clk_125MHz_clk_wiz_0 : STD_LOGIC;
   signal o_clk_25MHz_clk_wiz_0 : STD_LOGIC;
   signal NLW_plle2_adv_inst_CLKOUT2_UNCONNECTED : STD_LOGIC;
   signal NLW_plle2_adv_inst_CLKOUT3_UNCONNECTED : STD_LOGIC;
@@ -65,25 +65,25 @@ clkin1_ibufg: unisim.vcomponents.IBUF
     );
 clkout1_buf: unisim.vcomponents.BUFG
      port map (
-      I => o_clk_250MHz_clk_wiz_0,
-      O => o_clk_250MHz
+      I => o_clk_25MHz_clk_wiz_0,
+      O => o_clk_25MHz
     );
 clkout2_buf: unisim.vcomponents.BUFG
      port map (
-      I => o_clk_25MHz_clk_wiz_0,
-      O => o_clk_25MHz
+      I => o_clk_125MHz_clk_wiz_0,
+      O => o_clk_125MHz
     );
 plle2_adv_inst: unisim.vcomponents.PLLE2_ADV
     generic map(
       BANDWIDTH => "OPTIMIZED",
-      CLKFBOUT_MULT => 8,
+      CLKFBOUT_MULT => 7,
       CLKFBOUT_PHASE => 0.000000,
       CLKIN1_PERIOD => 8.000000,
       CLKIN2_PERIOD => 0.000000,
-      CLKOUT0_DIVIDE => 4,
+      CLKOUT0_DIVIDE => 35,
       CLKOUT0_DUTY_CYCLE => 0.500000,
       CLKOUT0_PHASE => 0.000000,
-      CLKOUT1_DIVIDE => 40,
+      CLKOUT1_DIVIDE => 7,
       CLKOUT1_DUTY_CYCLE => 0.500000,
       CLKOUT1_PHASE => 0.000000,
       CLKOUT2_DIVIDE => 1,
@@ -113,8 +113,8 @@ plle2_adv_inst: unisim.vcomponents.PLLE2_ADV
       CLKIN1 => i_clk_clk_wiz_0,
       CLKIN2 => '0',
       CLKINSEL => '1',
-      CLKOUT0 => o_clk_250MHz_clk_wiz_0,
-      CLKOUT1 => o_clk_25MHz_clk_wiz_0,
+      CLKOUT0 => o_clk_25MHz_clk_wiz_0,
+      CLKOUT1 => o_clk_125MHz_clk_wiz_0,
       CLKOUT2 => NLW_plle2_adv_inst_CLKOUT2_UNCONNECTED,
       CLKOUT3 => NLW_plle2_adv_inst_CLKOUT3_UNCONNECTED,
       CLKOUT4 => NLW_plle2_adv_inst_CLKOUT4_UNCONNECTED,
@@ -137,8 +137,8 @@ library UNISIM;
 use UNISIM.VCOMPONENTS.ALL;
 entity clk_wiz_0 is
   port (
-    o_clk_250MHz : out STD_LOGIC;
     o_clk_25MHz : out STD_LOGIC;
+    o_clk_125MHz : out STD_LOGIC;
     reset : in STD_LOGIC;
     i_locked : out STD_LOGIC;
     i_clk : in STD_LOGIC
@@ -153,7 +153,7 @@ inst: entity work.clk_wiz_0_clk_wiz
      port map (
       i_clk => i_clk,
       i_locked => i_locked,
-      o_clk_250MHz => o_clk_250MHz,
+      o_clk_125MHz => o_clk_125MHz,
       o_clk_25MHz => o_clk_25MHz,
       reset => reset
     );

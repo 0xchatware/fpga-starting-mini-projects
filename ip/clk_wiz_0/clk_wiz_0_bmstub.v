@@ -8,8 +8,8 @@
 module clk_wiz_0 (
   reset,
   i_clk,
-  o_clk_250MHz,
   o_clk_25MHz,
+  o_clk_125MHz,
   i_locked
 );
 
@@ -24,11 +24,11 @@ module clk_wiz_0 (
   (* X_INTERFACE_INFO = "xilinx.com:signal:clock:1.0 clock_CLK_OUT1 CLK_OUT1" *)
   (* X_INTERFACE_MODE = "master clock_CLK_OUT1" *)
   (* X_INTERFACE_PARAMETER = "XIL_INTERFACENAME clock_CLK_OUT1, FREQ_HZ 100000000, FREQ_TOLERANCE_HZ 0, PHASE 0.0, CLK_DOMAIN , ASSOCIATED_BUSIF , ASSOCIATED_PORT , ASSOCIATED_RESET , INSERT_VIP 0" *)
-  output o_clk_250MHz;
+  output o_clk_25MHz;
   (* X_INTERFACE_INFO = "xilinx.com:signal:clock:1.0 clock_CLK_OUT2 CLK_OUT2" *)
   (* X_INTERFACE_MODE = "master clock_CLK_OUT2" *)
   (* X_INTERFACE_PARAMETER = "XIL_INTERFACENAME clock_CLK_OUT2, FREQ_HZ 100000000, FREQ_TOLERANCE_HZ 0, PHASE 0.0, CLK_DOMAIN , ASSOCIATED_BUSIF , ASSOCIATED_PORT , ASSOCIATED_RESET , INSERT_VIP 0" *)
-  output o_clk_25MHz;
+  output o_clk_125MHz;
   (* X_INTERFACE_IGNORE = "true" *)
   output i_locked;
 

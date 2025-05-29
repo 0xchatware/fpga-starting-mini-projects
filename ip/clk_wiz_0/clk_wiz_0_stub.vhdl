@@ -2,7 +2,7 @@
 -- Copyright 2022-2024 Advanced Micro Devices, Inc. All Rights Reserved.
 -- --------------------------------------------------------------------------------
 -- Tool Version: Vivado v.2024.2 (win64) Build 5239630 Fri Nov 08 22:35:27 MST 2024
--- Date        : Fri May 23 10:13:37 2025
+-- Date        : Wed May 28 22:34:00 2025
 -- Host        : LAPTOP-H2TG1BH8 running 64-bit major release  (build 9200)
 -- Command     : write_vhdl -force -mode synth_stub c:/Projects/fpga_mini_project_starter/ip/clk_wiz_0/clk_wiz_0_stub.vhdl
 -- Design      : clk_wiz_0
@@ -14,8 +14,8 @@ use IEEE.STD_LOGIC_1164.ALL;
 
 entity clk_wiz_0 is
   Port ( 
-    o_clk_250MHz : out STD_LOGIC;
     o_clk_25MHz : out STD_LOGIC;
+    o_clk_125MHz : out STD_LOGIC;
     reset : in STD_LOGIC;
     i_locked : out STD_LOGIC;
     i_clk : in STD_LOGIC
@@ -29,6 +29,6 @@ architecture stub of clk_wiz_0 is
   attribute syn_black_box : boolean;
   attribute black_box_pad_pin : string;
   attribute syn_black_box of stub : architecture is true;
-  attribute black_box_pad_pin of stub : architecture is "o_clk_250MHz,o_clk_25MHz,reset,i_locked,i_clk";
+  attribute black_box_pad_pin of stub : architecture is "o_clk_25MHz,o_clk_125MHz,reset,i_locked,i_clk";
 begin
 end;
