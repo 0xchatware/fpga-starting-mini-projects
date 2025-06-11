@@ -35,7 +35,6 @@ module TMDS_Encoder(
         .o_qm(r_qm));
     
     reg signed [4:0] r_tally;
-    reg [7:0] r_last_data;
     reg [9:0] r_calculated_value;
     int v_num_ones = 0;
     
@@ -73,7 +72,6 @@ module TMDS_Encoder(
             r_tally = r_tally + v_num_ones - (10 - v_num_ones);
             
             v_num_ones = 0;
-            r_last_data = i_data;
         end
     end
     

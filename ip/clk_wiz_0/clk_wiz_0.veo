@@ -72,7 +72,6 @@
     .o_clk_25MHz(o_clk_25MHz),     // output o_clk_25MHz
     .o_clk_125MHz(o_clk_125MHz),     // output o_clk_125MHz
     // Status and control signals
-    .reset(reset), // input reset
     .i_locked(i_locked),       // output i_locked
    // Clock in ports
     .i_clk(i_clk)      // input i_clk

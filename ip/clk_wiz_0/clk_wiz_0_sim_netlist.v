@@ -2,7 +2,7 @@
 // Copyright 2022-2024 Advanced Micro Devices, Inc. All Rights Reserved.
 // --------------------------------------------------------------------------------
 // Tool Version: Vivado v.2024.2 (win64) Build 5239630 Fri Nov 08 22:35:27 MST 2024
-// Date        : Wed May 28 22:34:00 2025
+// Date        : Mon Jun  9 10:12:59 2025
 // Host        : LAPTOP-H2TG1BH8 running 64-bit major release  (build 9200)
 // Command     : write_verilog -force -mode funcsim
 //               c:/Projects/fpga_mini_project_starter/ip/clk_wiz_0/clk_wiz_0_sim_netlist.v
@@ -17,12 +17,10 @@
 module clk_wiz_0
    (o_clk_25MHz,
     o_clk_125MHz,
-    reset,
     i_locked,
     i_clk);
   output o_clk_25MHz;
   output o_clk_125MHz;
-  input reset;
   output i_locked;
   input i_clk;
 
@@ -30,25 +28,21 @@ module clk_wiz_0
   wire i_locked;
   wire o_clk_125MHz;
   wire o_clk_25MHz;
-  wire reset;
 
   clk_wiz_0_clk_wiz inst
        (.i_clk(i_clk),
         .i_locked(i_locked),
         .o_clk_125MHz(o_clk_125MHz),
-        .o_clk_25MHz(o_clk_25MHz),
-        .reset(reset));
+        .o_clk_25MHz(o_clk_25MHz));
 endmodule
 
 module clk_wiz_0_clk_wiz
    (o_clk_25MHz,
     o_clk_125MHz,
-    reset,
     i_locked,
     i_clk);
   output o_clk_25MHz;
   output o_clk_125MHz;
-  input reset;
   output i_locked;
   input i_clk;
 
@@ -61,7 +55,6 @@ module clk_wiz_0_clk_wiz
   wire o_clk_125MHz_clk_wiz_0;
   wire o_clk_25MHz;
   wire o_clk_25MHz_clk_wiz_0;
-  wire reset;
   wire NLW_plle2_adv_inst_CLKOUT2_UNCONNECTED;
   wire NLW_plle2_adv_inst_CLKOUT3_UNCONNECTED;
   wire NLW_plle2_adv_inst_CLKOUT4_UNCONNECTED;
@@ -144,7 +137,7 @@ module clk_wiz_0_clk_wiz
         .DWE(1'b0),
         .LOCKED(i_locked),
         .PWRDWN(1'b0),
-        .RST(reset));
+        .RST(1'b0));
 endmodule
 `ifndef GLBL
 `define GLBL

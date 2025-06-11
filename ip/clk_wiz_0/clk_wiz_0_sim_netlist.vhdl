@@ -2,7 +2,7 @@
 -- Copyright 2022-2024 Advanced Micro Devices, Inc. All Rights Reserved.
 -- --------------------------------------------------------------------------------
 -- Tool Version: Vivado v.2024.2 (win64) Build 5239630 Fri Nov 08 22:35:27 MST 2024
--- Date        : Wed May 28 22:34:00 2025
+-- Date        : Mon Jun  9 10:12:59 2025
 -- Host        : LAPTOP-H2TG1BH8 running 64-bit major release  (build 9200)
 -- Command     : write_vhdl -force -mode funcsim
 --               c:/Projects/fpga_mini_project_starter/ip/clk_wiz_0/clk_wiz_0_sim_netlist.vhdl
@@ -19,7 +19,6 @@ entity clk_wiz_0_clk_wiz is
   port (
     o_clk_25MHz : out STD_LOGIC;
     o_clk_125MHz : out STD_LOGIC;
-    reset : in STD_LOGIC;
     i_locked : out STD_LOGIC;
     i_clk : in STD_LOGIC
   );
@@ -128,7 +127,7 @@ plle2_adv_inst: unisim.vcomponents.PLLE2_ADV
       DWE => '0',
       LOCKED => i_locked,
       PWRDWN => '0',
-      RST => reset
+      RST => '0'
     );
 end STRUCTURE;
 library IEEE;
@@ -139,7 +138,6 @@ entity clk_wiz_0 is
   port (
     o_clk_25MHz : out STD_LOGIC;
     o_clk_125MHz : out STD_LOGIC;
-    reset : in STD_LOGIC;
     i_locked : out STD_LOGIC;
     i_clk : in STD_LOGIC
   );
@@ -154,7 +152,6 @@ inst: entity work.clk_wiz_0_clk_wiz
       i_clk => i_clk,
       i_locked => i_locked,
       o_clk_125MHz => o_clk_125MHz,
-      o_clk_25MHz => o_clk_25MHz,
-      reset => reset
+      o_clk_25MHz => o_clk_25MHz
     );
 end STRUCTURE;

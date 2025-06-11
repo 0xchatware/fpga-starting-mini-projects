@@ -22,7 +22,6 @@
 
 module Square_Pattern_Hdmi_480p_Top(
     input i_sys_clk,
-    input i_sys_rst,
     output [2:0] o_hdmi_tx_p,
     output [2:0] o_hdmi_tx_n,
     output o_hdmi_clk_p,
@@ -31,22 +30,44 @@ module Square_Pattern_Hdmi_480p_Top(
     
     parameter COORD_BITS = 10;
     parameter COLOUR_BITS = 8;
+    parameter RESET_TIMEOUT = 6250000; // for 50ns and a 125MHz clock
     
     logic w_clk_25Mhz, w_clk_125MHz;
     logic w_clk_locked;
     clk_wiz_0 Clk_Generator_Inst(
        .o_clk_25MHz(w_clk_25MHz),
-       .o_clk_125MHz(w_clk_125MHz), 
-       .reset(i_sys_rst),
+       .o_clk_125MHz(w_clk_125MHz),
        .i_locked(w_clk_locked),
        .i_clk(i_sys_clk));
+       
+    logic rst_src_pll = 1;
+    logic rst_src_pll_pre = 1;
+    always@(posedge w_clk_25MHz) begin
+        rst_src_pll = rst_src_pll_pre;
+        rst_src_pll_pre = !w_clk_locked;
+    end
+    
+    // Creates a reset state machine
+    logic [$clog2(RESET_TIMEOUT)-1:0] reset_count = 0;
+    logic clear_counter = 1;
+    logic master_reset = 1;
+    always @(posedge w_clk_25MHz)
+      begin
+        clear_counter <= rst_src_pll;
+        master_reset <= (reset_count != RESET_TIMEOUT);
+    
+        if (clear_counter)
+          reset_count <= 0;
+        else if (reset_count != RESET_TIMEOUT)
+          reset_count <= reset_count + 1;
+      end
     
     logic [COORD_BITS-1:0] w_sx, w_sy;
     logic w_hsync, w_vsync;
     logic w_de;
     Video_Signal_Generator Video_Signal_Inst(
         .i_clk_pxl(w_clk_25MHz),
-        .i_reset(!w_clk_locked),
+        .i_reset(master_reset),
         .o_sx(w_sx),
         .o_sy(w_sy),
         .o_hsync(w_hsync),
@@ -71,7 +92,7 @@ module Square_Pattern_Hdmi_480p_Top(
     
     TMDS_Encoder TMDS_Red (
         .i_clk(w_clk_25MHz),
-        .i_rst(i_sys_rst),
+        .i_rst(master_reset),
         .i_data(v_paint_r),
         .i_control(2'b00),
         .i_ve(w_de),
@@ -79,7 +100,7 @@ module Square_Pattern_Hdmi_480p_Top(
     
     TMDS_Encoder TMDS_Green (
         .i_clk(w_clk_25MHz),
-        .i_rst(i_sys_rst),
+        .i_rst(master_reset),
         .i_data(v_paint_g),
         .i_control(2'b00),
         .i_ve(w_de),
@@ -87,7 +108,7 @@ module Square_Pattern_Hdmi_480p_Top(
     
     TMDS_Encoder TMDS_Blue (
         .i_clk(w_clk_25MHz),
-        .i_rst(i_sys_rst),
+        .i_rst(master_reset),
         .i_data(v_paint_b),
         .i_control({w_vsync, w_hsync}),
         .i_ve(w_de),
@@ -96,21 +117,21 @@ module Square_Pattern_Hdmi_480p_Top(
     TMDS_Serializer TMDS_Red_Serializer (
         .i_clk_pixel(w_clk_25MHz),
         .i_clk_5x(w_clk_125MHz),
-        .i_rst(i_sys_rst),
+        .i_rst(master_reset),
         .i_tmds(w_tmds_red_buffer),
         .o_tmds(w_tmds_signal_red));
         
     TMDS_Serializer TMDS_Green_Serializer (
         .i_clk_pixel(w_clk_25MHz),
         .i_clk_5x(w_clk_125MHz),
-        .i_rst(i_sys_rst),
+        .i_rst(master_reset),
         .i_tmds(w_tmds_green_buffer),
         .o_tmds(w_tmds_signal_green));
     
     TMDS_Serializer TMDS_Blue_Serializer (
         .i_clk_pixel(w_clk_25MHz),
         .i_clk_5x(w_clk_125MHz),
-        .i_rst(i_sys_rst),
+        .i_rst(master_reset),
         .i_tmds(w_tmds_blue_buffer),
         .o_tmds(w_tmds_signal_blue));
     

@@ -70,7 +70,6 @@ module clk_wiz_0_clk_wiz
   output        o_clk_25MHz,
   output        o_clk_125MHz,
   // Status and control signals
-  input         reset,
   output        i_locked,
   input         i_clk
  );
@@ -114,7 +113,6 @@ wire clk_in2_clk_wiz_0;
   wire        clkout6_unused;
   wire        clkfbstopped_unused;
   wire        clkinstopped_unused;
-  wire        reset_high;
 
   PLLE2_ADV
   #(.BANDWIDTH            ("OPTIMIZED"),
@@ -157,8 +155,7 @@ wire clk_in2_clk_wiz_0;
     // Other control and status signals
     .LOCKED              (i_locked_int),
     .PWRDWN              (1'b0),
-    .RST                 (reset_high));
-  assign reset_high = reset; 
+    .RST                 (1'b0));
 
   assign i_locked = i_locked_int;
 // Clock Monitor clock assigning

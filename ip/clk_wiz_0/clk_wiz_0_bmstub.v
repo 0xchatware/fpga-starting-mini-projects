@@ -6,17 +6,12 @@
 
 (* BLOCK_STUB = "true" *)
 module clk_wiz_0 (
-  reset,
   i_clk,
   o_clk_25MHz,
   o_clk_125MHz,
   i_locked
 );
 
-  (* X_INTERFACE_INFO = "xilinx.com:signal:reset:1.0 reset RST" *)
-  (* X_INTERFACE_MODE = "slave reset" *)
-  (* X_INTERFACE_PARAMETER = "XIL_INTERFACENAME reset, POLARITY ACTIVE_HIGH, BOARD.ASSOCIATED_PARAM RESET_BOARD_INTERFACE, INSERT_VIP 0" *)
-  input reset;
   (* X_INTERFACE_INFO = "xilinx.com:signal:clock:1.0 clock_CLK_IN1 CLK_IN1" *)
   (* X_INTERFACE_MODE = "slave clock_CLK_IN1" *)
   (* X_INTERFACE_PARAMETER = "XIL_INTERFACENAME clock_CLK_IN1, FREQ_HZ 100000000, FREQ_TOLERANCE_HZ 0, PHASE 0.0, CLK_DOMAIN , ASSOCIATED_BUSIF , ASSOCIATED_PORT , ASSOCIATED_RESET , INSERT_VIP 0, BOARD.ASSOCIATED_PARAM CLK_IN1_BOARD_INTERFACE" *)
