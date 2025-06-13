@@ -52,15 +52,15 @@ module Square_Pattern_Hdmi_480p_Top(
     logic clear_counter = 1;
     logic master_reset = 1;
     always @(posedge w_clk_25MHz)
-      begin
+    begin
         clear_counter <= rst_src_pll;
         master_reset <= (reset_count != RESET_TIMEOUT);
-    
+        
         if (clear_counter)
           reset_count <= 0;
         else if (reset_count != RESET_TIMEOUT)
           reset_count <= reset_count + 1;
-      end
+    end 
     
     logic [COORD_BITS-1:0] w_sx, w_sy;
     logic w_hsync, w_vsync;
