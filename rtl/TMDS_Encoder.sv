@@ -34,8 +34,8 @@ module TMDS_Encoder(
         .i_data(i_data),
         .o_qm(r_qm));
     
-    reg signed [4:0] r_tally;
-    reg [9:0] r_calculated_value;
+    logic signed [4:0] r_tally;
+    logic [9:0] r_calculated_value;
     int v_num_ones = 0;
     
     always_comb begin

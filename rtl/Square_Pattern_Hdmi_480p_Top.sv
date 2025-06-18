@@ -28,9 +28,9 @@ module Square_Pattern_Hdmi_480p_Top(
     output o_hdmi_clk_n
     );
     
-    parameter COORD_BITS = 10;
-    parameter COLOUR_BITS = 8;
-    parameter RESET_TIMEOUT = 6250000; // for 50ns and a 125MHz clock
+    localparam COORD_BITS = 10;
+    localparam COLOUR_BITS = 8;
+    localparam RESET_TIMEOUT = 6250000; // for 50ns and a 125MHz clock
     
     logic w_clk_25Mhz, w_clk_125MHz;
     logic w_clk_locked;
@@ -89,6 +89,7 @@ module Square_Pattern_Hdmi_480p_Top(
     
     logic [9:0] w_tmds_red_buffer, w_tmds_blue_buffer, w_tmds_green_buffer;
     logic w_tmds_signal_red, w_tmds_signal_blue, w_tmds_signal_green;
+    logic w_tmds_signal_red_buffer, w_tmds_signal_blue_buffer, w_tmds_signal_green_buffer;
     
     TMDS_Encoder TMDS_Red (
         .i_clk(w_clk_25MHz),
