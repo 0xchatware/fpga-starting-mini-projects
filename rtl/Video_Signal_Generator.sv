@@ -45,10 +45,10 @@ module Video_Signal_Generator#(
     output logic [$clog2(FPS)-1:0] o_fc // frame counter
     );
     
-    assign o_hsync = o_sx >= ACTIVE_H_PIXELS + H_FRONT_PORCH - 1 && 
-                    o_sx <  ACTIVE_H_PIXELS + H_FRONT_PORCH + H_SYNCH_WIDTH - 1;
-    assign o_vsync = o_sy >= ACTIVE_LINES + V_FRONT_PORCH - 1 &&
-                   o_sy <  ACTIVE_LINES + V_FRONT_PORCH + V_SYNC_WIDTH - 1;
+    assign o_hsync = o_sx >= ACTIVE_H_PIXELS + H_FRONT_PORCH && 
+                    o_sx <  ACTIVE_H_PIXELS + H_FRONT_PORCH + H_SYNCH_WIDTH;
+    assign o_vsync = o_sy >= ACTIVE_LINES + V_FRONT_PORCH &&
+                   o_sy <  ACTIVE_LINES + V_FRONT_PORCH + V_SYNC_WIDTH;
  
     assign o_de = o_sx < ACTIVE_H_PIXELS && o_sy < ACTIVE_LINES;
     assign o_nf = o_sx == 0 && o_sy == 0;
@@ -56,22 +56,22 @@ module Video_Signal_Generator#(
     always@(posedge i_clk_pxl)
     begin
         if (i_reset) begin
-            o_sx = 0;
-            o_sy = 0;
-            o_fc = 0;
+            o_sx <= 0;
+            o_sy <= 0;
+            o_fc <= 0;
         end
         else if (o_sx == TOTAL_PIXELS-1) begin
-            o_sx = 0;
+            o_sx <= 0;
             if (o_sy == TOTAL_LINES-1) begin
-                o_sy = 0;
-                o_fc = (o_fc == FPS-1) ? 0 : o_fc + 1;
+                o_sy <= 0;
+                o_fc <= (o_fc == FPS-1) ? 0 : o_fc + 1;
             end
             else begin
-                o_sy += 1;
+                o_sy <= o_sy + 1;
             end
         end 
         else begin
-            o_sx += 1;
+            o_sx <= o_sx + 1;
         end
     end
 endmodule

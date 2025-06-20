@@ -28,7 +28,7 @@
         int sum; // between 0 to 7
         logic[7:0] qm_data;
         logic use_xnor;
-        always@(*) begin
+        always_comb begin
             sum = $countbits(i_data, 1'b1);
             use_xnor = sum > 4 || (sum == 4 && i_data[0] == 0);
             qm_data[0] = i_data[0];
@@ -40,6 +40,6 @@
                     qm_data[i] = i_data[i] ^ qm_data[i-1];
                 end
             end
-            o_qm = {~use_xnor, qm_data};
+            o_qm <= {~use_xnor, qm_data};
         end
     endmodule

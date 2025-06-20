@@ -23,8 +23,8 @@
 module Video_Signal_Generator_TB();
     localparam CLK_PERIOD = 8; // 8ns == 125MHz
     localparam FRAMES_PER_SECOND = 60;
-    localparam PIXELS_COUNT = 800;
-    localparam LINES_COUNT = 525;
+    localparam PIXELS_COUNT = 1650;
+    localparam LINES_COUNT = 750;
     logic clk_tb, reset, locked;
     logic [$clog2(PIXELS_COUNT)-1:0] sx;
     logic [$clog2(LINES_COUNT)-1:0] sy;
@@ -32,18 +32,27 @@ module Video_Signal_Generator_TB();
     logic nf;
     logic [$clog2(FRAMES_PER_SECOND)-1:0] fc;
     
-    logic clk_25MHz, clk_250MHz;
+    logic clk_25MHz, clk_125MHz;
     
     clk_wiz_0 Clock_Gen_Inst
    (
-    .o_clk_250MHz(clk_250MHz),     // output o_clk_250MHz
+    .o_clk_125MHz(clk_125MHz),     // output o_clk_125MHz
     .o_clk_25MHz(clk_25MHz),     // output o_clk_25MHz
-    .reset(reset), // input reset
     .i_locked(locked),
     .i_clk(clk_tb)      // input i_clk
     );
     
-    Video_Signal_Generator UUT (
+    Video_Signal_Generator #( 
+        .ACTIVE_H_PIXELS(1280),
+        .H_FRONT_PORCH(110),
+        .H_SYNCH_WIDTH(40),
+        .H_BACK_PORCH(220),
+        .ACTIVE_LINES(720),
+        .V_FRONT_PORCH(5),
+        .V_SYNC_WIDTH(5),
+        .V_BACK_PORCH(20),
+        .FPS(60)
+    ) UUT (
     .i_clk_pxl(clk_25MHz),
     .i_reset(!locked),
     .o_sx(sx),
