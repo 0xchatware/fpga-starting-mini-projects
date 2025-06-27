@@ -3,9 +3,9 @@
 // Company: 
 // Engineer: 
 // 
-// Create Date: 06/19/2025 01:46:58 PM
+// Create Date: 06/26/2025 09:53:21 PM
 // Design Name: 
-// Module Name: Square_Pattern_Hdmi_720p_Top
+// Module Name: Pong_Top
 // Project Name: 
 // Target Devices: 
 // Tool Versions: 
@@ -20,18 +20,29 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 
-module Square_Pattern_Hdmi_720p_Top(
-    input i_sys_clk,
-    output [2:0] o_hdmi_tx_p,
-    output [2:0] o_hdmi_tx_n,
-    output o_hdmi_clk_p,
-    output o_hdmi_clk_n
+module Pong_720p_Top(
+    input wire i_sys_clk,
+    input wire [1:0] i_sw,
+    input wire [1:0] i_control,
+    output logic [2:0] o_hdmi_tx_p,
+    output logic [2:0] o_hdmi_tx_n,
+    output logic o_hdmi_clk_p,
+    output logic o_hdmi_clk_n
     );
     
-    localparam TOTAL_VER_PIXEL = 750;
-    localparam TOTAL_HOR_PIXEL = 1650;
     localparam COLOUR_BITS = 8;
     localparam RESET_TIMEOUT = 93750000; // for 50ns and a 25MHz clock
+    localparam ACTIVE_H_PIXELS = 1280;
+    localparam H_FRONT_PORCH = 110;
+    localparam H_SYNCH_WIDTH = 40;
+    localparam H_BACK_PORCH = 220;
+    localparam TOTAL_HOR_PIXEL = ACTIVE_H_PIXELS + H_FRONT_PORCH + H_SYNCH_WIDTH + H_BACK_PORCH;
+    localparam ACTIVE_LINES = 720;
+    localparam V_FRONT_PORCH = 5;
+    localparam V_SYNCH_WIDTH = 5;
+    localparam V_BACK_PORCH = 20;
+    localparam TOTAL_VER_PIXEL = ACTIVE_LINES + V_FRONT_PORCH + V_SYNCH_WIDTH + V_BACK_PORCH;
+    localparam FPS = 60;
     
     logic w_clk_pxl, w_clk_pxl_5x;
     logic w_clk_locked;
@@ -65,18 +76,19 @@ module Square_Pattern_Hdmi_720p_Top(
     
     logic [$clog2(TOTAL_HOR_PIXEL)-1:0] w_sx;
     logic [$clog2(TOTAL_VER_PIXEL)-1:0] w_sy;
+    logic [$clog2(FPS)-1:0] w_fc;
     logic w_hsync, w_vsync;
-    logic w_de;
+    logic w_de, w_nf;
     Video_Signal_Generator #( 
-        .ACTIVE_H_PIXELS(1280),
-        .H_FRONT_PORCH(110),
-        .H_SYNCH_WIDTH(40),
-        .H_BACK_PORCH(220),
-        .ACTIVE_LINES(720),
-        .V_FRONT_PORCH(5),
-        .V_SYNCH_WIDTH(5),
-        .V_BACK_PORCH(20),
-        .FPS(60)
+        .ACTIVE_H_PIXELS(ACTIVE_H_PIXELS),
+        .H_FRONT_PORCH(H_FRONT_PORCH),
+        .H_SYNCH_WIDTH(H_SYNCH_WIDTH),
+        .H_BACK_PORCH(H_BACK_PORCH),
+        .ACTIVE_LINES(ACTIVE_LINES),
+        .V_FRONT_PORCH(V_FRONT_PORCH),
+        .V_SYNCH_WIDTH(V_SYNCH_WIDTH),
+        .V_BACK_PORCH(V_BACK_PORCH),
+        .FPS(FPS)
     )Video_Signal_Inst(
         .i_clk_pxl(w_clk_pxl),
         .i_reset(master_reset),
@@ -85,19 +97,24 @@ module Square_Pattern_Hdmi_720p_Top(
         .o_hsync(w_hsync),
         .o_vsync(w_vsync),
         .o_de(w_de),
-        .o_nf(),
-        .o_fc());
+        .o_nf(w_nf),
+        .o_fc(w_fc));
     
-    logic v_square;
     logic [COLOUR_BITS-1:0] v_paint_r, v_paint_g, v_paint_b;
-    always_comb begin
-        v_square = (w_sx > 220 && w_sx < 420) && (w_sy > 140 && w_sy < 340);
-        
-        // White outside the square, blue inside the square.
-        v_paint_r = (v_square) ? 8'hFF : 8'h00;
-        v_paint_g = (v_square) ? 8'hFF : 8'h00;
-        v_paint_b = (v_square) ? 8'hFF : 8'h8B;
-    end
+    
+    Pong Pong_Inst(
+          .i_pixel_clk(w_clk_pxl),
+          .i_rst(master_reset),
+          .i_control(i_control),
+          .i_puck_speed(i_sw[0]),
+          .i_paddle_speed(i_sw[1]),
+          .i_nf(w_nf),
+          .i_hcount(w_sx),
+          .i_vcount(w_sy),
+          .o_red(v_paint_r),
+          .o_green(v_paint_g),
+          .o_blue(v_paint_b)
+          );
     
     logic [9:0] w_tmds_red_buffer, w_tmds_blue_buffer, w_tmds_green_buffer;
     logic w_tmds_signal_red, w_tmds_signal_blue, w_tmds_signal_green;

@@ -1,4 +1,5 @@
 `timescale 1ns / 1ps
+`default_nettype none
 //////////////////////////////////////////////////////////////////////////////////
 // Company: 
 // Engineer: 
@@ -19,14 +20,13 @@
 // 
 //////////////////////////////////////////////////////////////////////////////////
 
-
 module Test_Pattern_720p_Top(
-    input i_sys_clk,
-    input [1:0] i_sw,
-    output [2:0] o_hdmi_tx_p,
-    output [2:0] o_hdmi_tx_n,
-    output o_hdmi_clk_p,
-    output o_hdmi_clk_n
+    input wire i_sys_clk,
+    input wire [1:0] i_sw,
+    output logic [2:0] o_hdmi_tx_p,
+    output logic [2:0] o_hdmi_tx_n,
+    output logic o_hdmi_clk_p,
+    output logic o_hdmi_clk_n
     );
     
     localparam TOTAL_VER_PIXEL = 750;
@@ -75,7 +75,7 @@ module Test_Pattern_720p_Top(
         .H_BACK_PORCH(220),
         .ACTIVE_LINES(720),
         .V_FRONT_PORCH(5),
-        .V_SYNC_WIDTH(5),
+        .V_SYNCH_WIDTH(5),
         .V_BACK_PORCH(20),
         .FPS(60)
     )Video_Signal_Inst(
@@ -153,3 +153,4 @@ module Test_Pattern_720p_Top(
     OBUFDS OBUFDS_red  (.I(w_tmds_signal_red), .O(o_hdmi_tx_p[2]), .OB(o_hdmi_tx_n[2]));
     OBUFDS OBUFDS_clock(.I(w_clk_pxl), .O(o_hdmi_clk_p), .OB(o_hdmi_clk_n));
 endmodule
+`default_nettype wire

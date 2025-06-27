@@ -1,4 +1,5 @@
 `timescale 1ns / 1ps
+`default_nettype none
 //////////////////////////////////////////////////////////////////////////////////
 // Company: 
 // Engineer: 
@@ -18,7 +19,6 @@
 // Additional Comments:
 // 
 //////////////////////////////////////////////////////////////////////////////////
-
 
 module TMDS_Encoder(
     input wire i_clk,
@@ -74,5 +74,5 @@ module TMDS_Encoder(
             
         end
     end
-    
 endmodule
+`default_nettype wire

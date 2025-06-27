@@ -19,12 +19,12 @@
 // 
 //////////////////////////////////////////////////////////////////////////////////
 
-
+`default_nettype none
 module Test_Pattern_Generator#(parameter TOTAL_COLUMNS = 1280,
                                parameter TOTAL_ROWS = 720)(
-  input [1:0] i_sel,
-  input [$clog2(TOTAL_COLUMNS)-1:0] i_hcount,
-  input [$clog2(TOTAL_ROWS)-1:0] i_vcount,
+  input wire [1:0] i_sel,
+  input wire [$clog2(TOTAL_COLUMNS)-1:0] i_hcount,
+  input wire [$clog2(TOTAL_ROWS)-1:0] i_vcount,
   output logic [7:0] o_red,
   output logic [7:0] o_green,
   output logic [7:0] o_blue
@@ -66,5 +66,5 @@ module Test_Pattern_Generator#(parameter TOTAL_COLUMNS = 1280,
         default : r_state = ONE_COLOUR_PATTERN;
     endcase
   end
-  
 endmodule
+`default_nettype wire

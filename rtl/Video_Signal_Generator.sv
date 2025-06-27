@@ -1,4 +1,6 @@
 `timescale 1ns / 1ps
+`default_nettype none
+
 //////////////////////////////////////////////////////////////////////////////////
 // Company: 
 // Engineer: 
@@ -20,7 +22,6 @@
 // 
 //////////////////////////////////////////////////////////////////////////////////
 
-
 module Video_Signal_Generator#(
     parameter ACTIVE_H_PIXELS = 640,
     parameter H_FRONT_PORCH = 16,
@@ -28,27 +29,27 @@ module Video_Signal_Generator#(
     parameter H_BACK_PORCH = 48,
     parameter ACTIVE_LINES = 480,
     parameter V_FRONT_PORCH = 10,
-    parameter V_SYNC_WIDTH = 2,
+    parameter V_SYNCH_WIDTH = 2,
     parameter V_BACK_PORCH = 33,
     parameter FPS = 60,
     parameter TOTAL_PIXELS = ACTIVE_H_PIXELS + H_FRONT_PORCH + H_SYNCH_WIDTH + H_BACK_PORCH,
-    parameter TOTAL_LINES = ACTIVE_LINES + V_FRONT_PORCH + V_SYNC_WIDTH + V_BACK_PORCH)
+    parameter TOTAL_LINES = ACTIVE_LINES + V_FRONT_PORCH + V_SYNCH_WIDTH + V_BACK_PORCH)
 (
     input wire i_clk_pxl,
     input wire i_reset,
     output logic [$clog2(TOTAL_PIXELS)-1:0] o_sx,
     output logic [$clog2(TOTAL_LINES)-1:0] o_sy,
-    output o_hsync,
-    output o_vsync,
-    output o_de,     // data enable
-    output o_nf,     // is next frame
+    output wire o_hsync,
+    output wire o_vsync,
+    output wire o_de,     // data enable
+    output wire o_nf,     // is next frame
     output logic [$clog2(FPS)-1:0] o_fc // frame counter
     );
     
     assign o_hsync = o_sx >= ACTIVE_H_PIXELS + H_FRONT_PORCH && 
                     o_sx <  ACTIVE_H_PIXELS + H_FRONT_PORCH + H_SYNCH_WIDTH;
     assign o_vsync = o_sy >= ACTIVE_LINES + V_FRONT_PORCH &&
-                   o_sy <  ACTIVE_LINES + V_FRONT_PORCH + V_SYNC_WIDTH;
+                   o_sy <  ACTIVE_LINES + V_FRONT_PORCH + V_SYNCH_WIDTH;
  
     assign o_de = o_sx < ACTIVE_H_PIXELS && o_sy < ACTIVE_LINES;
     assign o_nf = o_sx == 0 && o_sy == 0;
@@ -75,3 +76,4 @@ module Video_Signal_Generator#(
         end
     end
 endmodule
+`default_nettype wire
