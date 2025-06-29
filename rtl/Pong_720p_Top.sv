@@ -24,6 +24,7 @@ module Pong_720p_Top(
     input wire i_sys_clk,
     input wire [1:0] i_sw,
     input wire [1:0] i_control,
+    input wire i_reset_btn,
     output logic [2:0] o_hdmi_tx_p,
     output logic [2:0] o_hdmi_tx_n,
     output logic o_hdmi_clk_p,
@@ -54,9 +55,14 @@ module Pong_720p_Top(
        
     logic rst_src_pll = 1;
     logic rst_src_pll_pre = 1;
+    logic rst_src_debounce = 1;
+    logic rst_src_debounce_pre = 1;
     always@(posedge w_clk_pxl) begin
-        rst_src_pll = rst_src_pll_pre;
-        rst_src_pll_pre = !w_clk_locked;
+        rst_src_pll <= rst_src_pll_pre;
+        rst_src_pll_pre <= !w_clk_locked;
+        
+        rst_src_debounce <= rst_src_debounce_pre;
+        rst_src_debounce_pre <= i_reset_btn;
     end
     
     // Creates a reset state machine
@@ -65,7 +71,7 @@ module Pong_720p_Top(
     logic master_reset = 1;
     always @(posedge w_clk_pxl)
     begin
-        clear_counter <= rst_src_pll;
+        clear_counter <= rst_src_pll || rst_src_debounce;
         master_reset <= (reset_count != RESET_TIMEOUT);
         
         if (clear_counter)
@@ -102,7 +108,7 @@ module Pong_720p_Top(
     
     logic [COLOUR_BITS-1:0] v_paint_r, v_paint_g, v_paint_b;
     
-    Pong Pong_Inst(
+    Pong_720p Pong_Inst(
           .i_pixel_clk(w_clk_pxl),
           .i_rst(master_reset),
           .i_control(i_control),

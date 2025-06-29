@@ -22,11 +22,11 @@
 
 
 module Block_Sprite#(
-  parameter WIDTH=128, HEIGHT=128, COLOR=24'hFF_FF_FF)(
-  input wire [10:0] i_hcount,
-  input wire [9:0] i_vcount,
-  input wire [10:0] i_x,
-  input wire [9:0]  i_y,
+  parameter WIDTH=128, HEIGHT=128, COLOR=24'hFF_FF_FF, SCREEN_WIDTH=800, SCREEN_HEIGHT=525)(
+  input wire [$clog2(SCREEN_WIDTH)-1:0] i_hcount,
+  input wire [$clog2(SCREEN_HEIGHT)-1:0] i_vcount,
+  input wire [$clog2(SCREEN_WIDTH)-1:0] i_x,
+  input wire [$clog2(SCREEN_HEIGHT)-1:0]  i_y,
   output logic [7:0] o_red,
   output logic [7:0] o_green,
   output logic [7:0] o_blue);
