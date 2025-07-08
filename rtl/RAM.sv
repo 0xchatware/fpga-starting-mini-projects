@@ -1,4 +1,5 @@
 `timescale 1ns / 1ps
+`default_nettype none
 //////////////////////////////////////////////////////////////////////////////////
 // Company: 
 // Engineer: 
@@ -23,14 +24,14 @@
 module RAM#(parameter WIDTH = 8,
             parameter DEPTH = 256)(   
     // Write
-    input i_wr_clk,
-    input i_wr_dv, // data valid
-    input [$clog2(DEPTH)-1:0] i_wr_addr,
-    input [WIDTH-1:0]         i_wr_data,
+    input wire i_wr_clk,
+    input wire i_wr_dv, // data valid
+    input wire [$clog2(DEPTH)-1:0] i_wr_addr,
+    input wire [WIDTH-1:0]         i_wr_data,
     // Read
-    input i_rd_clk,
-    input i_rd_en,
-    input [$clog2(DEPTH)-1:0] i_rd_addr,
+    input wire i_rd_clk,
+    input wire i_rd_en,
+    input wire [$clog2(DEPTH)-1:0] i_rd_addr,
     output logic [WIDTH-1:0]  o_rd_data,
     output logic o_rd_dv // data valid
     );
@@ -49,3 +50,4 @@ module RAM#(parameter WIDTH = 8,
     end
     
 endmodule
+`default_nettype wire

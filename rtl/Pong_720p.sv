@@ -24,9 +24,8 @@ module Pong_720p #(
     parameter SCREEN_WIDTH=1650, SCREEN_HEIGHT=750)(
     input wire i_pixel_clk,
     input wire i_rst,
+    input wire i_next_round,
     input wire [1:0] i_control,
-    input wire i_puck_speed,
-    input wire i_paddle_speed,
     input wire i_nf,
     input wire [$clog2(SCREEN_WIDTH)-1:0] i_hcount,
     input wire [$clog2(SCREEN_HEIGHT)-1:0] i_vcount,
@@ -37,35 +36,36 @@ module Pong_720p #(
      
   localparam PADDLE_WIDTH = 16;
   localparam PADDLE_HEIGHT = 128;
-  localparam PUCK_WIDTH = 128;
-  localparam PUCK_HEIGHT = 128;
+  localparam PUCK_WIDTH = 50;
+  localparam PUCK_HEIGHT = 50;
   localparam GAME_WIDTH = 1280;
   localparam GAME_HEIGHT = 720;
-  localparam SLOW_SPEED = 1;
-  localparam FAST_SPEED = 3;
+  localparam PADDLE_SPEED = 1;
+  localparam PUCK_SPEED = 3;
 
-  logic [$clog2(SCREEN_WIDTH)-1:0] puck_x, paddle_x; //puck x location, paddle x location
-  logic [$clog2(SCREEN_HEIGHT)-1:0] puck_y, paddle_y; //puck y location, paddle y location
+  logic [$clog2(SCREEN_WIDTH)-1:0] puck_x, paddle1_x, paddle2_x; //puck x location, paddle x location
+  logic [$clog2(SCREEN_HEIGHT)-1:0] puck_y, paddle1_y, paddle2_y; //puck y location, paddle y location
   logic [7:0] puck_r, puck_g, puck_b; //puck red, green, blue (from block sprite)
-  logic [7:0] paddle_r, paddle_g, paddle_b; //paddle colors from its block sprite)
+  logic [7:0] paddle1_r, paddle1_g, paddle1_b; //paddle colors from its block sprite)
+  logic [7:0] paddle2_r, paddle2_g, paddle2_b;
 
   logic dir_x, dir_y; //use for direction of movement: 1 going positive, 0 going negative
 
-  logic up, down; //up down from buttons
+  logic up1, down1; //up1 down1 from buttons
   logic game_over; //signal to indicate game over (0 on game reset, 1 during play)
-  assign up = i_control[1]; //up control
-  assign down = i_control[0]; //down control
+  assign up1 = i_control[1]; //up1 control
+  assign down1 = i_control[0]; //down1 control
 
   Block_Sprite #(.WIDTH(PADDLE_WIDTH), .HEIGHT(PADDLE_HEIGHT), 
                  .SCREEN_WIDTH(SCREEN_WIDTH), .SCREEN_HEIGHT(SCREEN_HEIGHT))
-  paddle(
+  paddle_player_1(
     .i_hcount(i_hcount),
     .i_vcount(i_vcount),
-    .i_x(paddle_x),
-    .i_y(paddle_y),
-    .o_red(paddle_r),
-    .o_green(paddle_g),
-    .o_blue(paddle_b));
+    .i_x(paddle1_x),
+    .i_y(paddle1_y),
+    .o_red(paddle1_r),
+    .o_green(paddle1_g),
+    .o_blue(paddle1_b));
 
   Block_Sprite #(.WIDTH(PUCK_WIDTH), .HEIGHT(PUCK_HEIGHT), 
                  .SCREEN_WIDTH(SCREEN_WIDTH), .SCREEN_HEIGHT(SCREEN_HEIGHT))
@@ -77,18 +77,30 @@ module Pong_720p #(
     .o_red(puck_r),
     .o_green(puck_g),
     .o_blue(puck_b));
+    
+  Block_Sprite #(.WIDTH(PADDLE_WIDTH), .HEIGHT(PADDLE_HEIGHT), 
+                 .SCREEN_WIDTH(SCREEN_WIDTH), .SCREEN_HEIGHT(SCREEN_HEIGHT))
+  paddle_player_2(
+    .i_hcount(i_hcount),
+    .i_vcount(i_vcount),
+    .i_x(paddle2_x),
+    .i_y(paddle2_y),
+    .o_red(paddle2_r),
+    .o_green(paddle2_g),
+    .o_blue(paddle2_b));
 
-  assign o_red = puck_r | paddle_r; //merge color contributions from puck and paddle
-  assign o_green =  puck_g | paddle_g; //merge color contribuations from puck and paddle
-  assign o_blue = puck_b | paddle_b; //merge color contributsion from puck and paddle
+  assign o_red = puck_r | paddle1_r | paddle2_r; //merge color contributions from puck and paddle
+  assign o_green =  puck_g | paddle1_g | paddle2_g; //merge color contribuations from puck and paddle
+  assign o_blue = puck_b | paddle1_b | paddle2_b; //merge color contributsion from puck and paddle
 
-  logic puck_overlap; //one bit signal indicating if puck and paddle overlap
-  assign puck_overlap = (puck_y >= paddle_y && puck_y < (paddle_y+PADDLE_HEIGHT)) ||
-                        ((puck_y+PUCK_HEIGHT) >= paddle_y && (puck_y+PUCK_HEIGHT) < (paddle_y+PADDLE_HEIGHT));
+  logic puck1_overlap; //one bit signal indicating if puck and paddle overlap
+  assign puck1_overlap = (puck_y >= paddle1_y && puck_y < (paddle1_y+PADDLE_HEIGHT)) ||
+                        ((puck_y+PUCK_HEIGHT) >= paddle1_y && (puck_y+PUCK_HEIGHT) < (paddle1_y+PADDLE_HEIGHT));
+                        
+  logic puck2_overlap;
+  assign puck2_overlap = (puck_y >= paddle2_y && puck_y < (paddle2_y+PADDLE_HEIGHT)) ||
+                        ((puck_y+PUCK_HEIGHT) >= paddle2_y && (puck_y+PUCK_HEIGHT) < (paddle2_y+PADDLE_HEIGHT));
 
-  logic [$clog2(FAST_SPEED)-1:0] puck_speed, paddle_speed;
-  assign puck_speed = i_puck_speed ? FAST_SPEED : SLOW_SPEED;
-  assign paddle_speed = i_paddle_speed ? FAST_SPEED : SLOW_SPEED;
   always_ff @(posedge i_pixel_clk)begin
     if (i_rst)begin
       //start puck in center of screen
@@ -97,31 +109,37 @@ module Pong_720p #(
       dir_x <= i_hcount[0]; //start at pseudorandom direction
       dir_y <= i_hcount[1]; //start with pseudorandom direction
       //start paddle in center of left half of screen
-      paddle_x <= 0;
-      paddle_y <= GAME_HEIGHT/2 - PADDLE_HEIGHT/2;
+      paddle1_x <= 0;
+      paddle1_y <= GAME_HEIGHT/2 - PADDLE_HEIGHT/2;
+      paddle2_x <= (GAME_WIDTH-PADDLE_WIDTH);
+      paddle2_y <= GAME_HEIGHT/2 - PADDLE_HEIGHT/2;
       game_over <= 0;
     end else begin
-      if (~game_over) begin
-        //your logic here.
-        if (i_nf) begin
-            if (up && ~down) begin
-                paddle_y <= paddle_y < paddle_speed ? 0 : paddle_y - paddle_speed;
-            end else if (~up && down) begin
-                paddle_y <= (paddle_y + paddle_speed) < (GAME_HEIGHT-PADDLE_HEIGHT) ?
-                            (paddle_y + paddle_speed) : (GAME_HEIGHT-PADDLE_HEIGHT);
-            end
-            
-            if (puck_x < PADDLE_WIDTH && !puck_overlap) begin
-                game_over <= 1;
-            end else if (puck_x < PADDLE_WIDTH || puck_x > (GAME_WIDTH-PUCK_WIDTH)) begin
-                dir_x = ~dir_x;
-            end else if (puck_y < puck_speed || puck_y > (GAME_HEIGHT-PUCK_HEIGHT)) begin
-                dir_y = ~dir_y;
-            end
-            
-            puck_x = dir_x ? puck_x+puck_speed : puck_x-puck_speed;
-            puck_y = dir_y ? puck_y-puck_speed : puck_y+puck_speed;
+      if (~game_over && i_nf) begin
+        if (up1 && ~down1) begin
+            paddle1_y <= paddle1_y < PADDLE_SPEED ? 0 : paddle1_y-PADDLE_SPEED;
+        end else if (~up1 && down1) begin
+            paddle1_y <= (paddle1_y+PADDLE_SPEED) <= (GAME_HEIGHT-PADDLE_HEIGHT) ?
+                        (paddle1_y+PADDLE_SPEED) : (GAME_HEIGHT-PADDLE_HEIGHT);
         end
+        
+        if (paddle2_y > puck_y) begin
+            paddle2_y <= paddle2_y < PADDLE_SPEED ? 0 : paddle2_y-PADDLE_SPEED;
+        end else if (paddle2_y < (PUCK_HEIGHT+puck_y)) begin
+            paddle2_y <= (paddle2_y+PADDLE_SPEED) <= (GAME_HEIGHT-PADDLE_HEIGHT) ? 
+                         (paddle2_y+PADDLE_SPEED) : (GAME_HEIGHT-PADDLE_HEIGHT);
+        end
+        
+        if ((puck_x < PADDLE_WIDTH && !puck1_overlap) || (puck_x > (GAME_WIDTH-PUCK_WIDTH-PADDLE_WIDTH) && !puck2_overlap)) begin
+            game_over <= 1;
+        end else if (puck_x < PADDLE_WIDTH || puck_x > (GAME_WIDTH-PUCK_WIDTH-PADDLE_WIDTH)) begin
+            dir_x = ~dir_x;
+        end else if (puck_y < PUCK_SPEED || puck_y > (GAME_HEIGHT-PUCK_HEIGHT)) begin
+            dir_y = ~dir_y;
+        end
+        
+        puck_x = dir_x ? puck_x+PUCK_SPEED : puck_x-PUCK_SPEED;
+        puck_y = dir_y ? puck_y-PUCK_SPEED : puck_y+PUCK_SPEED;
       end
     end
   end

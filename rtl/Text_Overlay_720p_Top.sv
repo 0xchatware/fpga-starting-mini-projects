@@ -1,12 +1,11 @@
 `timescale 1ns / 1ps
-`default_nettype none
 //////////////////////////////////////////////////////////////////////////////////
 // Company: 
 // Engineer: 
 // 
-// Create Date: 06/26/2025 09:53:21 PM
+// Create Date: 07/08/2025 03:13:13 PM
 // Design Name: 
-// Module Name: Pong_Top
+// Module Name: Text_Overlay_720p_Top
 // Project Name: 
 // Target Devices: 
 // Tool Versions: 
@@ -21,30 +20,19 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 
-module Pong_720p_Top(
+module Text_Overlay_720p_Top(
     input wire i_sys_clk,
-    input wire i_rst_sw,
-    input wire i_next_round_sw,
-    input wire [1:0] i_control,
     output logic [2:0] o_hdmi_tx_p,
     output logic [2:0] o_hdmi_tx_n,
     output logic o_hdmi_clk_p,
     output logic o_hdmi_clk_n
     );
     
+    localparam TOTAL_VER_PIXEL = 750;
+    localparam TOTAL_HOR_PIXEL = 1650;
     localparam COLOUR_BITS = 8;
-    localparam RESET_TIMEOUT = 1250000; // for 50ms and a 25MHz clock
-    localparam ACTIVE_H_PIXELS = 1280;
-    localparam H_FRONT_PORCH = 110;
-    localparam H_SYNCH_WIDTH = 40;
-    localparam H_BACK_PORCH = 220;
-    localparam TOTAL_HOR_PIXEL = ACTIVE_H_PIXELS + H_FRONT_PORCH + H_SYNCH_WIDTH + H_BACK_PORCH;
-    localparam ACTIVE_LINES = 720;
-    localparam V_FRONT_PORCH = 5;
-    localparam V_SYNCH_WIDTH = 5;
-    localparam V_BACK_PORCH = 20;
-    localparam TOTAL_VER_PIXEL = ACTIVE_LINES + V_FRONT_PORCH + V_SYNCH_WIDTH + V_BACK_PORCH;
-    localparam FPS = 60;
+    localparam RESET_TIMEOUT = 93750000; // for 50ns and a 25MHz clock
+    localparam NUM_CHAR = 256;
     
     logic w_clk_pxl, w_clk_pxl_5x;
     logic w_clk_locked;
@@ -54,26 +42,11 @@ module Pong_720p_Top(
        .i_locked(w_clk_locked),
        .i_clk(i_sys_clk));
        
-    logic rst_sw_change, rst_sw_prev;
-    always_ff@(posedge w_clk_pxl) begin
-        if (rst_sw_prev != i_rst_sw) begin
-            rst_sw_change = 1;
-        end else begin
-            rst_sw_change = 0;
-        end
-        rst_sw_prev <= i_rst_sw;
-    end
-       
     logic rst_src_pll = 1;
     logic rst_src_pll_pre = 1;
-    logic rst_src_debounce = 1;
-    logic rst_src_debounce_pre = 1;
-    always_ff@(posedge w_clk_pxl) begin
-        rst_src_pll <= rst_src_pll_pre;
-        rst_src_pll_pre <= !w_clk_locked;
-        
-        rst_src_debounce <= rst_src_debounce_pre;
-        rst_src_debounce_pre <= rst_sw_change;
+    always@(posedge w_clk_pxl) begin
+        rst_src_pll = rst_src_pll_pre;
+        rst_src_pll_pre = !w_clk_locked;
     end
     
     // Creates a reset state machine
@@ -82,30 +55,29 @@ module Pong_720p_Top(
     logic master_reset = 1;
     always @(posedge w_clk_pxl)
     begin
-        clear_counter <= rst_src_pll || rst_src_debounce;
+        clear_counter <= rst_src_pll;
         master_reset <= (reset_count != RESET_TIMEOUT);
         
         if (clear_counter)
           reset_count <= 0;
         else if (reset_count != RESET_TIMEOUT)
           reset_count <= reset_count + 1;
-    end
+    end 
     
     logic [$clog2(TOTAL_HOR_PIXEL)-1:0] w_sx;
     logic [$clog2(TOTAL_VER_PIXEL)-1:0] w_sy;
-    logic [$clog2(FPS)-1:0] w_fc;
     logic w_hsync, w_vsync;
-    logic w_de, w_nf;
+    logic w_de;
     Video_Signal_Generator #( 
-        .ACTIVE_H_PIXELS(ACTIVE_H_PIXELS),
-        .H_FRONT_PORCH(H_FRONT_PORCH),
-        .H_SYNCH_WIDTH(H_SYNCH_WIDTH),
-        .H_BACK_PORCH(H_BACK_PORCH),
-        .ACTIVE_LINES(ACTIVE_LINES),
-        .V_FRONT_PORCH(V_FRONT_PORCH),
-        .V_SYNCH_WIDTH(V_SYNCH_WIDTH),
-        .V_BACK_PORCH(V_BACK_PORCH),
-        .FPS(FPS)
+        .ACTIVE_H_PIXELS(1280),
+        .H_FRONT_PORCH(110),
+        .H_SYNCH_WIDTH(40),
+        .H_BACK_PORCH(220),
+        .ACTIVE_LINES(720),
+        .V_FRONT_PORCH(5),
+        .V_SYNCH_WIDTH(5),
+        .V_BACK_PORCH(20),
+        .FPS(60)
     )Video_Signal_Inst(
         .i_clk_pxl(w_clk_pxl),
         .i_reset(master_reset),
@@ -114,32 +86,38 @@ module Pong_720p_Top(
         .o_hsync(w_hsync),
         .o_vsync(w_vsync),
         .o_de(w_de),
-        .o_nf(w_nf),
-        .o_fc(w_fc));
+        .o_nf(),
+        .o_fc());
     
+    logic r_font_en, r_font_data;
+    logic [$clog2(TOTAL_HOR_PIXEL)-1:0] r_font_x;
+    logic [$clog2(TOTAL_VER_PIXEL)-1:0] r_font_y;
+    logic [$clog2(NUM_CHAR)-1:0] r_character;
+    
+    assign r_character = "A";
+    assign r_font_en = 1;
+    assign r_font_x = 0;
+    assign r_font_y = 0;
+    
+    Font_ROM#(.HORIZONTAL_WIDTH(TOTAL_HOR_PIXEL),
+              .VERTICAL_WIDTH(TOTAL_VER_PIXEL),
+              .NUM_CHAR(NUM_CHAR)
+    ) Font_ROM_Inst (
+        .i_clk(w_clk_pxl),
+        .i_character(r_character),
+        .i_sx(w_sx),
+        .i_sy(w_sy),
+        .i_x(r_font_x),
+        .i_y(r_font_y),
+        .i_en(r_font_en),
+        .o_data(r_font_data));
+        
     logic [COLOUR_BITS-1:0] v_paint_r, v_paint_g, v_paint_b;
-    logic next_round, next_round_prev;
-    always_ff@(posedge w_clk_pxl) begin
-        if (next_round_prev != i_next_round_sw) begin
-            next_round = 1;
-        end else begin
-            next_round = 0;
-        end
-        next_round_prev <= i_next_round_sw;
+    always@(posedge w_clk_pxl) begin
+        v_paint_r <= r_font_data ? 8'hFF : 8'h00;
+        v_paint_g <= r_font_data ? 8'hFF : 8'h00;
+        v_paint_b <= r_font_data ? 8'hFF : 8'h00;
     end
-    
-    Pong_720p Pong_Inst(
-          .i_pixel_clk(w_clk_pxl),
-          .i_rst(master_reset),
-          .i_next_round(next_round),
-          .i_control(i_control),
-          .i_nf(w_nf),
-          .i_hcount(w_sx),
-          .i_vcount(w_sy),
-          .o_red(v_paint_r),
-          .o_green(v_paint_g),
-          .o_blue(v_paint_b)
-          );
     
     logic [9:0] w_tmds_red_buffer, w_tmds_blue_buffer, w_tmds_green_buffer;
     logic w_tmds_signal_red, w_tmds_signal_blue, w_tmds_signal_green;
@@ -195,4 +173,3 @@ module Pong_720p_Top(
     OBUFDS OBUFDS_red  (.I(w_tmds_signal_red), .O(o_hdmi_tx_p[2]), .OB(o_hdmi_tx_n[2]));
     OBUFDS OBUFDS_clock(.I(w_clk_pxl), .O(o_hdmi_clk_p), .OB(o_hdmi_clk_n));
 endmodule
-`default_nettype wire

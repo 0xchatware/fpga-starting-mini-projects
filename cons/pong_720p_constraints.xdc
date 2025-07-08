@@ -1,9 +1,9 @@
 set_property -dict {PACKAGE_PIN H16 IOSTANDARD LVCMOS33} [get_ports i_sys_clk]
-set_property -dict {PACKAGE_PIN M20 IOSTANDARD LVCMOS33} [get_ports {i_sw[0]}]
-set_property -dict {PACKAGE_PIN M19 IOSTANDARD LVCMOS33} [get_ports {i_sw[1]}]
+set_property -dict {PACKAGE_PIN M20 IOSTANDARD LVCMOS33} [get_ports {i_next_round_sw}]
+set_property -dict {PACKAGE_PIN M19 IOSTANDARD LVCMOS33} [get_ports {i_rst_sw}]
 set_property -dict {PACKAGE_PIN D19 IOSTANDARD LVCMOS33} [get_ports {i_control[0]}]
 set_property -dict {PACKAGE_PIN D20 IOSTANDARD LVCMOS33} [get_ports {i_control[1]}]
-set_property -dict {PACKAGE_PIN L20 IOSTANDARD LVCMOS33} [get_ports i_reset_btn]
+
 set_property -dict {PACKAGE_PIN L17 IOSTANDARD TMDS_33} [get_ports o_hdmi_clk_n]
 set_property -dict {PACKAGE_PIN L16 IOSTANDARD TMDS_33} [get_ports o_hdmi_clk_p]
 set_property -dict {PACKAGE_PIN K18 IOSTANDARD TMDS_33} [get_ports {o_hdmi_tx_n[0]}]
@@ -20,6 +20,5 @@ set_output_delay -clock [filter [get_clocks -of_objects [get_cells TMDS_Red_Seri
 set_output_delay -clock [filter [get_clocks -of_objects [get_cells TMDS_Red_Serializer]] {name =~ *5x*}] -min 0.500 [get_ports o_hdmi_tx_*]
 
 set_false_path -from [filter [get_clocks -of_objects [get_cells TMDS_Red_Serializer]] {name =~ *5x*}] -to [get_ports o_hdmi_tx_*]
-set_false_path -from [get_ports {i_sw[*]}]
+set_false_path -from [get_ports {i_*_sw}]
 set_false_path -from [get_ports {i_control[*]}]
-set_false_path -from [get_ports {i_reset_btn}]

@@ -1,0 +1,52 @@
+`timescale 1ns / 1ps
+`default_nettype none
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date: 07/07/2025 02:02:49 PM
+// Design Name: 
+// Module Name: ROM
+// Project Name: 
+// Target Devices: 
+// Tool Versions: 
+// Description: 
+// 
+// Dependencies: 
+// 
+// Revision:
+// Revision 0.01 - File Created
+// Additional Comments: Inspired from https://github.com/adumont/fpga-font/blob/master/ram.v
+// 
+//////////////////////////////////////////////////////////////////////////////////
+
+
+module ROM#(parameter WIDTH=8,
+            parameter DEPTH=128,
+            parameter FILE="")
+(
+    input wire i_clk,
+    input wire [$clog2(DEPTH)-1:0] i_wr_addr,
+    input wire [$clog2(DEPTH)-1:0] i_rd_addr,
+    input wire i_wr_en,
+    input wire i_din,
+    output wire [WIDTH-1:0] o_dout
+    );
+    
+    reg [WIDTH-1:0] r_mem [0:DEPTH-1];
+    
+    initial begin
+        if (FILE != "") begin
+            $readmemh(FILE, r_mem);
+        end
+    end
+    
+    always_ff@(posedge i_clk) begin : write_rom
+        if (i_wr_en) begin
+            r_mem[i_wr_addr] = i_din;
+        end
+    end
+    
+    assign o_dout = r_mem[i_rd_addr];
+endmodule
+`default_nettype wire

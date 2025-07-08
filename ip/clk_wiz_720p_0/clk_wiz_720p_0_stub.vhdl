@@ -1,8 +1,8 @@
 -- Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
--- Copyright 2022-2024 Advanced Micro Devices, Inc. All Rights Reserved.
+-- Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
 -- --------------------------------------------------------------------------------
--- Tool Version: Vivado v.2024.2 (win64) Build 5239630 Fri Nov 08 22:35:27 MST 2024
--- Date        : Thu Jun 19 17:02:33 2025
+-- Tool Version: Vivado v.2025.1 (win64) Build 6140274 Thu May 22 00:12:29 MDT 2025
+-- Date        : Thu Jul  3 14:14:42 2025
 -- Host        : LAPTOP-H2TG1BH8 running 64-bit major release  (build 9200)
 -- Command     : write_vhdl -force -mode synth_stub
 --               c:/Projects/fpga_mini_project_starter/ip/clk_wiz_720p_0/clk_wiz_720p_0_stub.vhdl
@@ -22,7 +22,7 @@ entity clk_wiz_720p_0 is
   );
 
   attribute CORE_GENERATION_INFO : string;
-  attribute CORE_GENERATION_INFO of clk_wiz_720p_0 : entity is "clk_wiz_720p_0,clk_wiz_v6_0_15_0_0,{component_name=clk_wiz_720p_0,use_phase_alignment=true,use_min_o_jitter=false,use_max_i_jitter=false,use_dyn_phase_shift=false,use_inclk_switchover=false,use_dyn_reconfig=false,enable_axi=0,feedback_source=FDBK_AUTO,PRIMITIVE=PLL,num_out_clk=2,clkin1_period=8.000,clkin2_period=10.000,use_power_down=false,use_reset=false,use_locked=true,use_inclk_stopped=false,feedback_type=SINGLE,CLOCK_MGR_TYPE=NA,manual_override=false}";
+  attribute CORE_GENERATION_INFO of clk_wiz_720p_0 : entity is "clk_wiz_720p_0,clk_wiz_v6_0_16_0_0,{component_name=clk_wiz_720p_0,use_phase_alignment=true,use_min_o_jitter=false,use_max_i_jitter=false,use_dyn_phase_shift=false,use_inclk_switchover=false,use_dyn_reconfig=false,enable_axi=0,feedback_source=FDBK_AUTO,PRIMITIVE=PLL,num_out_clk=2,clkin1_period=8.000,clkin2_period=10.000,use_power_down=false,use_reset=false,use_locked=true,use_inclk_stopped=false,feedback_type=SINGLE,CLOCK_MGR_TYPE=NA,manual_override=false}";
 end clk_wiz_720p_0;
 
 architecture stub of clk_wiz_720p_0 is
