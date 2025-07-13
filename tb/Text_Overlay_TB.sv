@@ -3,9 +3,9 @@
 // Company: 
 // Engineer: 
 // 
-// Create Date: 07/08/2025 10:02:56 AM
+// Create Date: 07/12/2025 01:29:41 PM
 // Design Name: 
-// Module Name: Font_ROM_TB
+// Module Name: Text_Overlay_TB
 // Project Name: 
 // Target Devices: 
 // Tool Versions: 
@@ -20,7 +20,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 
-module Font_ROM_TB();
+module Text_Overlay_TB();
     localparam CLK_PERIOD = 40; // 25MHz = 40ns
     localparam ACTIVE_H_PIXELS = 1280;
     localparam H_FRONT_PORCH = 110;
@@ -43,41 +43,39 @@ module Font_ROM_TB();
     
     logic clk, reset;
     
-    logic [$clog2(TOTAL_HOR_PIXEL)-1:0] sx, x, sx_d, sx_dd;
-    logic [$clog2(TOTAL_VER_PIXEL)-1:0] sy, y, sy_d, sy_dd;
+    logic [$clog2(TOTAL_HOR_PIXEL)-1:0] sx, x, sx_d;
+    logic [$clog2(TOTAL_VER_PIXEL)-1:0] sy, y, sy_d;
     logic [$clog2(FPS)-1:0] fc;
     logic hsync, vsync, de, nf;
     
     logic [$clog2(NUM_CHAR)-1:0] character;
-    logic [$clog2(COLUMNS_TABLE)-1:0] offset;
-    logic [$clog2(CHAR_BUFF_COLUMNS)-1:0] wr_x_pos;
-    logic [$clog2(CHAR_BUFF_ROWS)-1:0] wr_y_pos; 
-    logic data, rd_en, wr_en;
+    logic [$clog2(COLUMNS_TABLE)-1:0] offset; 
+    logic data, rd_en, rd_dv;
     
-    string hello;
-    int cur_character;
-    int cur_pos;
-    int cur_char_x;
-    int cur_char_y;
-    logic [COLUMNS_TABLE-1:0] cur_data [0:CHAR_BUFF_ROWS*CHAR_BUFF_COLUMNS-1];
+    string hello_str;
+    initial hello_str = "Hello, world!";
+    localparam HELLO_STR_SIZE = 13;
+    logic [HELLO_STR_SIZE*8-1:0] str;
+    initial str = "Hello, world!";
+
+    int cur_character, cur_pos, cur_char_x, cur_char_y, error_count;
+    logic [COLUMNS_TABLE-1:0] cur_data [0:HELLO_STR_SIZE-1]; // questionable
     logic cur_byte;
     
     initial clk = 1;
     initial reset = 0;
     initial rd_en = 0;
-    initial wr_en = 0;
-    initial x = 0;
-    initial y = 0;
-    initial wr_x_pos = 0;
-    initial wr_y_pos = 0;
-    initial hello = "Hello, world";
+    initial x = 67;
+    initial y = 14;
     initial cur_byte = 0;
+    initial error_count = 0;
     
     assign #(CLK_PERIOD/2) clk = ~clk;
-    assign #(CLK_PERIOD) sx_d = sx;
-    assign #(CLK_PERIOD) sx_dd = sx_d;
-    assign #(CLK_PERIOD) sy_d = sy;
-    assign #(CLK_PERIOD) sy_dd = sy_d;
+    
+    always@(posedge clk) begin : delaying_tests_values
+        sx_d <= sx;
+        sy_d <= sy;
+    end
 
     Video_Signal_Generator #(.ACTIVE_H_PIXELS(ACTIVE_H_PIXELS),
                             .H_FRONT_PORCH(H_FRONT_PORCH),
@@ -90,7 +88,7 @@ module Font_ROM_TB();
                             .FPS(FPS)
     ) Video_Signal_Inst(
         .i_clk_pxl(clk),
-        .i_reset(reset),
+        .i_reset(reset || !rd_dv),
         .o_sx(sx),
         .o_sy(sy),
         .o_hsync(hsync),
@@ -98,23 +96,22 @@ module Font_ROM_TB();
         .o_de(de),
         .o_nf(nf),
         .o_fc(fc));
-    
-    Font_ROM#(.HORIZONTAL_WIDTH(TOTAL_HOR_PIXEL),
-              .VERTICAL_WIDTH(TOTAL_VER_PIXEL),
-              .CHAR_BUFF_COLUMNS(CHAR_BUFF_COLUMNS),
-              .CHAR_BUFF_ROWS(CHAR_BUFF_ROWS)
+        
+    Text_Overlay#(.HORIZONTAL_WIDTH(TOTAL_HOR_PIXEL),
+                  .VERTICAL_WIDTH(TOTAL_VER_PIXEL),
+                  .COLUMNS(CHAR_BUFF_COLUMNS),
+                  .NUM_CHAR(HELLO_STR_SIZE)
     ) UUT (
         .i_clk(clk),
-        .i_wr_character(character),
-        .i_wr_x_pos(wr_x_pos),
-        .i_wr_y_pos(wr_y_pos),
+        .i_characters(str),
         .i_sx(sx),
         .i_sy(sy),
         .i_x(x),
         .i_y(y),
         .i_rd_en(rd_en),
-        .i_wr_en(wr_en),
-        .o_rd_data(data));
+        .o_rd_dv(rd_dv),
+        .o_data(data)
+    );
     
     logic [COLUMNS_TABLE-1:0] font_data [0:LINES_TABLE-1];
     
@@ -122,7 +119,7 @@ module Font_ROM_TB();
         $display("Loading char into table.");
         $readmemh(FONT_FILE, font_data);
     end
-
+    
     initial begin : test_brench
         for (int i=0; i<CHAR_BUFF_ROWS*CHAR_BUFF_COLUMNS;i++) begin
             cur_data[i] = font_data[" "];
@@ -133,20 +130,21 @@ module Font_ROM_TB();
         #(CLK_PERIOD);
         reset = 0;
         
-        $display("Len of string : %d", hello.len());
-        
         populate_ram();
+        wait(rd_dv == 1);
         rd_en = 1;
-        #(CLK_PERIOD);
         
         for (int i = 0; i < TOTAL_VER_PIXEL * TOTAL_HOR_PIXEL; i++) begin
             if (sx >= x && sx < (CHAR_BUFF_COLUMNS*8+x) && sy >= y && sy <= (CHAR_BUFF_ROWS*16+y)) begin
                 cur_char_set();
                 #(CLK_PERIOD/2);
-                if (cur_byte || data || sy==2) begin
+                if (cur_byte || data) begin
                     assert (cur_byte == data) $display("Success!");
-                        else $error("Values don't match for character '%s', sx=0x%0h, sy=0x%0h, data=%0b, cur_byte[sx]=%0b.",
-                                    hello[cur_character], sx, sy, data, cur_byte);
+                        else begin 
+                            $error("Values don't match for character '%s', sx=0x%0h, sy=0x%0h, data=%0b, cur_byte[sx]=%0b.",
+                                    hello_str[cur_character], sx, sy, data, cur_byte);
+                            error_count++;
+                        end
                 end
                 #(CLK_PERIOD/2);
             end else begin
@@ -154,33 +152,26 @@ module Font_ROM_TB();
                 #(CLK_PERIOD);
             end
         end
+        $display("Error count: %d", error_count);
         $finish;
+        
     end
     
     task populate_ram;
-        for (int i = 0; i < hello.len(); i++) begin
-            #(CLK_PERIOD);
-            character = hello[i];
+        for (int i = 0; i < hello_str.len(); i++) begin
+            character = hello_str[i];
             cur_data[i] = font_data[character];
-            wr_x_pos = i % CHAR_BUFF_COLUMNS;
-            wr_y_pos = i / CHAR_BUFF_COLUMNS;
-            #(CLK_PERIOD);
             $display("Value of '%s': 0x%0h", character, cur_data[i]);
-            wr_en = 1;
-            #(CLK_PERIOD);
-            wr_en = 0;
-            #(CLK_PERIOD);
         end
     endtask
     
     task cur_char_set;
-        cur_char_x = (sx_dd-x)/8;
-        cur_char_y = (sy_dd-y)/16;
+        cur_char_x = (sx_d-x)/8;
+        cur_char_y = (sy_d-y)/16;
         cur_character = cur_char_x + cur_char_y * CHAR_BUFF_COLUMNS;
-        cur_pos = (sy_dd-y-cur_char_y*16) * 8 + (sx_dd-x-cur_char_x*8);
+        cur_pos = (sy_d-y-cur_char_y*16) * 8 + (sx_d-x-cur_char_x*8);
         offset = COLUMNS_TABLE-cur_pos-1;
-        cur_byte = cur_data[cur_character][offset];
+        cur_byte = cur_character < HELLO_STR_SIZE ? cur_data[cur_character][offset] : 0;
     endtask
-    
-    
+
 endmodule

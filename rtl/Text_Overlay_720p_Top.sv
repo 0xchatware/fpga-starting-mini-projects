@@ -1,4 +1,5 @@
 `timescale 1ns / 1ps
+`default_nettype none
 //////////////////////////////////////////////////////////////////////////////////
 // Company: 
 // Engineer: 
@@ -32,6 +33,8 @@ module Text_Overlay_720p_Top(
     localparam TOTAL_HOR_PIXEL = 1650;
     localparam COLOUR_BITS = 8;
     localparam RESET_TIMEOUT = 93750000; // for 50ns and a 25MHz clock
+    localparam DISPLAYED_TEXT = "Hello, world!";
+    localparam TEXT_COLUMNS = $bits(DISPLAYED_TEXT);
     localparam NUM_CHAR = 256;
     
     logic w_clk_pxl, w_clk_pxl_5x;
@@ -53,9 +56,10 @@ module Text_Overlay_720p_Top(
     logic [$clog2(RESET_TIMEOUT)-1:0] reset_count = 0;
     logic clear_counter = 1;
     logic master_reset = 1;
-    always @(posedge w_clk_pxl)
+    logic r_text_rd_dv;
+    always_ff@(posedge w_clk_pxl)
     begin
-        clear_counter <= rst_src_pll;
+        clear_counter <= rst_src_pll || !r_text_rd_dv;
         master_reset <= (reset_count != RESET_TIMEOUT);
         
         if (clear_counter)
@@ -89,34 +93,37 @@ module Text_Overlay_720p_Top(
         .o_nf(),
         .o_fc());
     
-    logic r_font_en, r_font_data;
-    logic [$clog2(TOTAL_HOR_PIXEL)-1:0] r_font_x;
-    logic [$clog2(TOTAL_VER_PIXEL)-1:0] r_font_y;
-    logic [$clog2(NUM_CHAR)-1:0] r_character;
+    logic r_text_en, r_text_data;
+    logic [$clog2(TOTAL_HOR_PIXEL)-1:0] r_text_box_x;
+    logic [$clog2(TOTAL_VER_PIXEL)-1:0] r_text_box_y;
+    logic [TEXT_COLUMNS*8-1:0] r_characters;
     
-    assign r_character = "A";
-    assign r_font_en = 1;
-    assign r_font_x = 0;
-    assign r_font_y = 0;
+    assign r_text_box_x = 0;
+    assign r_text_box_y = 0;
+    assign r_text_en = 1;
+    assign r_characters = DISPLAYED_TEXT;
     
-    Font_ROM#(.HORIZONTAL_WIDTH(TOTAL_HOR_PIXEL),
-              .VERTICAL_WIDTH(TOTAL_VER_PIXEL),
-              .NUM_CHAR(NUM_CHAR)
-    ) Font_ROM_Inst (
+    Text_Overlay#(.HORIZONTAL_WIDTH(TOTAL_HOR_PIXEL),
+                  .VERTICAL_WIDTH(TOTAL_VER_PIXEL),
+                  .COLUMNS(TEXT_COLUMNS),
+                  .NUM_CHAR(TEXT_COLUMNS)
+    ) Hello_Text_Box_Inst (
         .i_clk(w_clk_pxl),
-        .i_character(r_character),
+        .i_characters(r_characters),
         .i_sx(w_sx),
         .i_sy(w_sy),
-        .i_x(r_font_x),
-        .i_y(r_font_y),
-        .i_en(r_font_en),
-        .o_data(r_font_data));
+        .i_x(r_text_box_x),
+        .i_y(r_text_box_y),
+        .i_rd_en(r_text_en),
+        .o_rd_dv(r_text_rd_dv),
+        .o_data(r_text_data)
+    );
         
     logic [COLOUR_BITS-1:0] v_paint_r, v_paint_g, v_paint_b;
-    always@(posedge w_clk_pxl) begin
-        v_paint_r <= r_font_data ? 8'hFF : 8'h00;
-        v_paint_g <= r_font_data ? 8'hFF : 8'h00;
-        v_paint_b <= r_font_data ? 8'hFF : 8'h00;
+    always_ff@(posedge w_clk_pxl) begin
+        v_paint_r <= r_text_data ? 8'hFF : 8'h00;
+        v_paint_g <= r_text_data ? 8'hFF : 8'h00;
+        v_paint_b <= r_text_data ? 8'hFF : 8'h00;
     end
     
     logic [9:0] w_tmds_red_buffer, w_tmds_blue_buffer, w_tmds_green_buffer;
@@ -173,3 +180,4 @@ module Text_Overlay_720p_Top(
     OBUFDS OBUFDS_red  (.I(w_tmds_signal_red), .O(o_hdmi_tx_p[2]), .OB(o_hdmi_tx_n[2]));
     OBUFDS OBUFDS_clock(.I(w_clk_pxl), .O(o_hdmi_clk_p), .OB(o_hdmi_clk_n));
 endmodule
+`default_nettype wire

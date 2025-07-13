@@ -26,14 +26,12 @@ module ROM#(parameter WIDTH=8,
             parameter FILE="")
 (
     input wire i_clk,
-    input wire [$clog2(DEPTH)-1:0] i_wr_addr,
     input wire [$clog2(DEPTH)-1:0] i_rd_addr,
-    input wire i_wr_en,
-    input wire i_din,
-    output wire [WIDTH-1:0] o_dout
+    output logic [WIDTH-1:0] o_dout
     );
     
-    reg [WIDTH-1:0] r_mem [0:DEPTH-1];
+    (* rom_style = "block" *) logic [WIDTH-1:0] r_mem [0:DEPTH-1];
+    logic [WIDTH-1:0] r_dout;
     
     initial begin
         if (FILE != "") begin
@@ -41,12 +39,8 @@ module ROM#(parameter WIDTH=8,
         end
     end
     
-    always_ff@(posedge i_clk) begin : write_rom
-        if (i_wr_en) begin
-            r_mem[i_wr_addr] = i_din;
-        end
+    always_ff@(posedge i_clk) begin : read_rom
+        o_dout <= r_mem[i_rd_addr];
     end
-    
-    assign o_dout = r_mem[i_rd_addr];
 endmodule
 `default_nettype wire

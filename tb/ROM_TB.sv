@@ -27,26 +27,19 @@ module ROM_TB();
     localparam FILE = "VGA8.F16.mem";
     
     logic clk;
-    logic wr_en;
-    logic [$clog2(DEPTH)-1:0] wr_addr, rd_addr;
-    logic [WIDTH-1:0] wr_data, rd_data;
+    logic [$clog2(DEPTH)-1:0] rd_addr;
+    logic [WIDTH-1:0] rd_data;
     
     initial clk = 0;
-    initial wr_en = 0;
-    initial wr_addr = 0;
     initial rd_addr = 0;
-    initial wr_data = 0;
     
     assign #(CLK_PERIOD / 2) clk = ~clk;
     
     ROM#(.WIDTH(WIDTH), .DEPTH(DEPTH), .FILE(FILE)) UUT
     (
         .i_clk(clk),
-        .i_wr_addr(wr_addr),
         .i_rd_addr(rd_addr),
-        .i_wr_en(wr_en),
-        .i_din(wr_data),
-        .o_dout(rd_addr));
+        .o_dout(rd_data));
     
     initial begin
         #(CLK_PERIOD * 10);

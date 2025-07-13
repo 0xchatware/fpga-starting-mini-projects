@@ -22,7 +22,9 @@
 
 
 module RAM#(parameter WIDTH = 8,
-            parameter DEPTH = 256)(   
+            parameter DEPTH = 256,
+            parameter FILE = "",
+            parameter INITIAL_ZERO = 0)(   
     // Write
     input wire i_wr_clk,
     input wire i_wr_dv, // data valid
@@ -36,17 +38,26 @@ module RAM#(parameter WIDTH = 8,
     output logic o_rd_dv // data valid
     );
     
-    reg [WIDTH-1:0] r_mem [DEPTH-1:0];
+    logic [WIDTH-1:0] r_mem [0:DEPTH-1];
+    
+    initial begin
+        if (FILE != "") begin
+            $readmemh(FILE, r_mem);
+        end else if (INITIAL_ZERO == 1) begin
+            for (int i = 0; i < DEPTH; i++)
+                r_mem[i] <= 0;
+        end
+    end
         
-    always@(posedge i_wr_clk) begin
+    always_ff@(posedge i_wr_clk) begin
         if (i_wr_dv) begin
-            r_mem[i_wr_addr] = i_wr_data;
+            r_mem[i_wr_addr] <= i_wr_data;
         end
     end
     
-    always@(posedge i_rd_clk) begin
-        o_rd_data = r_mem[i_rd_addr];
-        o_rd_dv = i_rd_en;
+    always_ff@(posedge i_rd_clk) begin
+        o_rd_data <= r_mem[i_rd_addr];
+        o_rd_dv <= i_rd_en;
     end
     
 endmodule
