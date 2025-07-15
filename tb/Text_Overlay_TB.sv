@@ -55,8 +55,13 @@ module Text_Overlay_TB();
     string hello_str;
     initial hello_str = "Hello, world!";
     localparam HELLO_STR_SIZE = 13;
-    logic [HELLO_STR_SIZE*8-1:0] str;
+    logic [HELLO_STR_SIZE-1:0][7:0] str;
     initial str = "Hello, world!";
+    
+    string hello_only_str;
+    initial hello_only_str = "Hello, hello!";
+    logic [HELLO_STR_SIZE-1:0][7:0] str_2;
+    initial str_2 = "Hello, hello!";
 
     int cur_character, cur_pos, cur_char_x, cur_char_y, error_count;
     logic [COLUMNS_TABLE-1:0] cur_data [0:HELLO_STR_SIZE-1]; // questionable
@@ -121,7 +126,7 @@ module Text_Overlay_TB();
     end
     
     initial begin : test_brench
-        for (int i=0; i<CHAR_BUFF_ROWS*CHAR_BUFF_COLUMNS;i++) begin
+        for (int i = 0; i < CHAR_BUFF_ROWS*CHAR_BUFF_COLUMNS; i++) begin
             cur_data[i] = font_data[" "];
         end
         
@@ -130,9 +135,23 @@ module Text_Overlay_TB();
         #(CLK_PERIOD);
         reset = 0;
         
-        populate_ram();
+        run_test(hello_str);
+        
+        $display("Changing string value.");
+        str = str_2;
+        #(CLK_PERIOD);
+        
+        run_test(hello_only_str);
+        
+        $finish;
+        
+    end
+    
+    task run_test(input string str_arg);
+        populate_ram(str_arg);
         wait(rd_dv == 1);
         rd_en = 1;
+        error_count = 0;
         
         for (int i = 0; i < TOTAL_VER_PIXEL * TOTAL_HOR_PIXEL; i++) begin
             if (sx >= x && sx < (CHAR_BUFF_COLUMNS*8+x) && sy >= y && sy <= (CHAR_BUFF_ROWS*16+y)) begin
@@ -142,7 +161,7 @@ module Text_Overlay_TB();
                     assert (cur_byte == data) $display("Success!");
                         else begin 
                             $error("Values don't match for character '%s', sx=0x%0h, sy=0x%0h, data=%0b, cur_byte[sx]=%0b.",
-                                    hello_str[cur_character], sx, sy, data, cur_byte);
+                                    str_arg[cur_character], sx, sy, data, cur_byte);
                             error_count++;
                         end
                 end
@@ -153,13 +172,11 @@ module Text_Overlay_TB();
             end
         end
         $display("Error count: %d", error_count);
-        $finish;
-        
-    end
+    endtask
     
-    task populate_ram;
-        for (int i = 0; i < hello_str.len(); i++) begin
-            character = hello_str[i];
+    task populate_ram (input string str_arg);
+        for (int i = 0; i < str_arg.len(); i++) begin
+            character = str_arg[i];
             cur_data[i] = font_data[character];
             $display("Value of '%s': 0x%0h", character, cur_data[i]);
         end

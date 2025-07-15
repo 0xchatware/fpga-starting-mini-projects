@@ -33,8 +33,7 @@ module Text_Overlay_720p_Top(
     localparam TOTAL_HOR_PIXEL = 1650;
     localparam COLOUR_BITS = 8;
     localparam RESET_TIMEOUT = 93750000; // for 50ns and a 25MHz clock
-    localparam DISPLAYED_TEXT = "Hello, world!";
-    localparam TEXT_COLUMNS = $bits(DISPLAYED_TEXT);
+    localparam TEXT_COLUMNS = 13;
     localparam NUM_CHAR = 256;
     
     logic w_clk_pxl, w_clk_pxl_5x;
@@ -59,7 +58,7 @@ module Text_Overlay_720p_Top(
     logic r_text_rd_dv;
     always_ff@(posedge w_clk_pxl)
     begin
-        clear_counter <= rst_src_pll || !r_text_rd_dv;
+        clear_counter <= rst_src_pll;
         master_reset <= (reset_count != RESET_TIMEOUT);
         
         if (clear_counter)
@@ -96,12 +95,12 @@ module Text_Overlay_720p_Top(
     logic r_text_en, r_text_data;
     logic [$clog2(TOTAL_HOR_PIXEL)-1:0] r_text_box_x;
     logic [$clog2(TOTAL_VER_PIXEL)-1:0] r_text_box_y;
-    logic [TEXT_COLUMNS*8-1:0] r_characters;
+    logic [TEXT_COLUMNS-1:0][7:0] r_characters;
     
-    assign r_text_box_x = 0;
-    assign r_text_box_y = 0;
+    assign r_text_box_x = 100;
+    assign r_text_box_y = 100;
     assign r_text_en = 1;
-    assign r_characters = DISPLAYED_TEXT;
+    assign r_characters = "Hello, world!";
     
     Text_Overlay#(.HORIZONTAL_WIDTH(TOTAL_HOR_PIXEL),
                   .VERTICAL_WIDTH(TOTAL_VER_PIXEL),
