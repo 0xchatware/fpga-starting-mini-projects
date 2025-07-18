@@ -33,7 +33,8 @@ module Text_Overlay_720p_Top(
     localparam TOTAL_HOR_PIXEL = 1650;
     localparam COLOUR_BITS = 8;
     localparam RESET_TIMEOUT = 93750000; // for 50ns and a 25MHz clock
-    localparam TEXT_COLUMNS = 13;
+    localparam TEXT_COLUMNS = 7;
+    localparam HELLO_WORLD_CHAR_NUM = 13;
     localparam NUM_CHAR = 256;
     
     logic w_clk_pxl, w_clk_pxl_5x;
@@ -55,10 +56,10 @@ module Text_Overlay_720p_Top(
     logic [$clog2(RESET_TIMEOUT)-1:0] reset_count = 0;
     logic clear_counter = 1;
     logic master_reset = 1;
-    logic r_text_rd_dv;
+    logic r_text_write_completed;
     always_ff@(posedge w_clk_pxl)
     begin
-        clear_counter <= rst_src_pll;
+        clear_counter <= rst_src_pll || !r_text_write_completed;
         master_reset <= (reset_count != RESET_TIMEOUT);
         
         if (clear_counter)
@@ -92,20 +93,20 @@ module Text_Overlay_720p_Top(
         .o_nf(),
         .o_fc());
     
-    logic r_text_en, r_text_data;
+    logic r_text_en, r_text_data, r_text_rd_dv;
     logic [$clog2(TOTAL_HOR_PIXEL)-1:0] r_text_box_x;
     logic [$clog2(TOTAL_VER_PIXEL)-1:0] r_text_box_y;
-    logic [TEXT_COLUMNS-1:0][7:0] r_characters;
+    logic [HELLO_WORLD_CHAR_NUM-1:0][7:0] r_characters;
     
-    assign r_text_box_x = 100;
-    assign r_text_box_y = 100;
+    assign r_text_box_x = 0;
+    assign r_text_box_y = 0;
     assign r_text_en = 1;
     assign r_characters = "Hello, world!";
     
     Text_Overlay#(.HORIZONTAL_WIDTH(TOTAL_HOR_PIXEL),
                   .VERTICAL_WIDTH(TOTAL_VER_PIXEL),
                   .COLUMNS(TEXT_COLUMNS),
-                  .NUM_CHAR(TEXT_COLUMNS)
+                  .NUM_CHAR(HELLO_WORLD_CHAR_NUM)
     ) Hello_Text_Box_Inst (
         .i_clk(w_clk_pxl),
         .i_characters(r_characters),
@@ -114,15 +115,18 @@ module Text_Overlay_720p_Top(
         .i_x(r_text_box_x),
         .i_y(r_text_box_y),
         .i_rd_en(r_text_en),
+        .o_wr_completed(r_text_write_completed),
         .o_rd_dv(r_text_rd_dv),
         .o_data(r_text_data)
     );
         
     logic [COLOUR_BITS-1:0] v_paint_r, v_paint_g, v_paint_b;
     always_ff@(posedge w_clk_pxl) begin
-        v_paint_r <= r_text_data ? 8'hFF : 8'h00;
-        v_paint_g <= r_text_data ? 8'hFF : 8'h00;
-        v_paint_b <= r_text_data ? 8'hFF : 8'h00;
+        if (r_text_rd_dv) begin
+            v_paint_r <= r_text_data ? 8'hFF : 8'h00;
+            v_paint_g <= r_text_data ? 8'hFF : 8'h00;
+            v_paint_b <= r_text_data ? 8'hFF : 8'h00;
+        end
     end
     
     logic [9:0] w_tmds_red_buffer, w_tmds_blue_buffer, w_tmds_green_buffer;

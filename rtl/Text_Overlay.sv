@@ -32,8 +32,9 @@ module Text_Overlay#(parameter HORIZONTAL_WIDTH=1650,
     input wire [$clog2(HORIZONTAL_WIDTH)-1:0] i_x,
     input wire [$clog2(VERTICAL_WIDTH)-1:0] i_y,
     input wire i_rd_en,
+    output logic o_wr_completed,
     output logic o_rd_dv,
-    output wire o_data
+    output logic o_data
     );
     
     localparam NUM_OF_POSSIBLE_CHAR = 256;
@@ -41,13 +42,14 @@ module Text_Overlay#(parameter HORIZONTAL_WIDTH=1650,
     
     int r_prev_characters, r_cur_characters;
     logic [$clog2(NUM_CHAR)-1:0] r_i;
+    bit r_prog_start;
     
     logic [$clog2(NUM_OF_POSSIBLE_CHAR)-1:0] r_character;
     logic [$clog2(COLUMNS)-1:0] r_wr_x_pos;
     logic [$clog2(ROWS)-1:0] r_wr_y_pos;
     logic r_wr_en;
     
-    initial r_prev_characters = -1;
+    initial r_prog_start = 1;
     
     Font_ROM#(.HORIZONTAL_WIDTH(HORIZONTAL_WIDTH),
               .VERTICAL_WIDTH(VERTICAL_WIDTH),
@@ -64,31 +66,33 @@ module Text_Overlay#(parameter HORIZONTAL_WIDTH=1650,
         .i_y(i_y),
         .i_rd_en(i_rd_en),
         .i_wr_en(r_wr_en),
+        .o_rd_dv(o_rd_dv),
         .o_rd_data(o_data));
         
     always_ff@(posedge i_clk) begin
         r_cur_characters <= simple_hash(i_characters);
         
-        if (r_prev_characters != r_cur_characters) begin
+        if (r_prog_start || r_prev_characters != r_cur_characters) begin
             r_i <= 0;
             r_wr_en <= 1;
-            o_rd_dv <= 0;
+            o_wr_completed <= 0;
             r_prev_characters <= r_cur_characters;
+            r_prog_start <= 0;
         end else if (r_wr_en) begin
             r_character <= i_characters[NUM_CHAR-r_i-1];
             r_wr_x_pos <= r_i % COLUMNS;
             r_wr_y_pos <= r_i / COLUMNS;
             r_wr_en <= r_i == NUM_CHAR ? 0 : 1;
-            o_rd_dv <= r_i == NUM_CHAR ? 1 : 0;
+            o_wr_completed <= r_i == NUM_CHAR ? 1 : 0;
             r_i <= r_i + 1;
         end
     end
     
-    function automatic simple_hash(input logic [NUM_CHAR-1:0][7:0] characters);
-        simple_hash = 8'h00;
+    function int simple_hash(input logic [NUM_CHAR-1:0][7:0] characters);
+        simple_hash = 32'h00;
         for (int i=0; i < NUM_CHAR/4; i++) begin
             for (int j=0; j < 4; j++) begin
-                simple_hash ^= characters[i + j] << (8 * j);
+                simple_hash ^= {24'h00, characters[i + j]} << (8 * j);
             end
         end
     endfunction

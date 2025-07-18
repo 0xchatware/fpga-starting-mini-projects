@@ -30,7 +30,7 @@ module ROM#(parameter WIDTH=8,
     output logic [WIDTH-1:0] o_dout
     );
     
-    (* rom_style = "block" *) logic [WIDTH-1:0] r_mem [0:DEPTH-1];
+    logic [WIDTH-1:0] r_mem [0:DEPTH-1];
     logic [WIDTH-1:0] r_dout;
     
     initial begin

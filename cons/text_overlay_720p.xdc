@@ -17,7 +17,7 @@ set_clock_groups -asynchronous \
 
 set fwclk        [filter [get_clocks -of_objects [get_cells TMDS_Red_Serializer]] {name =~ *5x*}];     # forwarded clock name (generated using create_generated_clock at output clock port)        
 set output_ports  {o_hdmi_tx_*};   # list of output ports
-set_output_delay -clock $fwclk 1.0 [get_ports $output_ports];
+set_output_delay -max -clock $fwclk 2.5 [get_ports $output_ports];
+set_output_delay -min -clock $fwclk 0.5 [get_ports $output_ports];
 
-set_false_path -from $fwclk -to [get_ports $output_ports];
-
+set_false_path -from [get_pins TMDS_*_Serializer/primary/CLK] -to [get_ports $output_ports]

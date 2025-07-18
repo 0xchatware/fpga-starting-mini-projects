@@ -29,18 +29,17 @@ module TM_Choice(
     logic[7:0] qm_data;
     logic use_xnor;
     always_comb begin
-        sum = $countbits(i_data, 1'b1);
+        sum = $countones(i_data);
         use_xnor = sum > 4 || (sum == 4 && i_data[0] == 0);
         qm_data[0] = i_data[0];
         for (int i = 1; i < 8; i++) begin
-            if (use_xnor) begin
-                qm_data[i] = ~(i_data[i] ^ qm_data[i-1]);
-            end
-            else begin
-                qm_data[i] = i_data[i] ^ qm_data[i-1];
-            end
+            qm_data[i] = use_xnor ? ~(i_data[i] ^ qm_data[i-1]) : i_data[i] ^ qm_data[i-1];
         end
-        o_qm <= {~use_xnor, qm_data};
+        o_qm = {~use_xnor, qm_data};
+    end
+    
+    always_comb begin
+        
     end
 endmodule
 `default_nettype wire

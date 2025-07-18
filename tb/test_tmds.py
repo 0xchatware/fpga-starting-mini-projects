@@ -14,9 +14,9 @@ from random import getrandbits
 async def reset(rst,clk):
     """ Helper function to issue a reset signal to our module """
     rst.value = 1
-    await ClockCycles(clk,3)
+    await ClockCycles(clk,3,False)
     rst.value = 0
-    await ClockCycles(clk,2)
+    await ClockCycles(clk,1,False)
 
 async def drive_data(dut,data_byte,control_bits,ve_bit):
     """ submit a set of data values as input, then wait a clock cycle for them to stay there. """
@@ -54,11 +54,14 @@ async def test_tmds(dut):
     dut.i_data.value = 0
     dut.i_control.value = 0
     dut.i_ve.value = 0
+    dut.i_rst.value = 0
     # use helper function to assert reset signal
+    await FallingEdge(dut.i_clk)
     await reset(dut.i_rst,dut.i_clk)
 
     print("First Test!")
     tally = 0
+    tmds = 0
     for data in range(0b1111_1111 + 1):
         await drive_data(dut, data, 0b00, 1)
         qm = await tm_choice(data)
@@ -69,8 +72,9 @@ async def test_tmds(dut):
         num_ones = await count_bits(tmds)
         num_zeros = 10 - num_ones
         tally += num_ones - num_zeros
-        assert dut.o_tmds.value.integer == tmds, f"For {bin(data)}.\n\t\tCurrent Tally is {dut.r_tally.value}.\n\t\tNum of Ones is {dut.v_num_ones.value}."
-    
+        assert dut.o_tmds.value.integer == tmds, f"RTL:\n\tData: {bin(data)}.\n\t\tCurrent Tally is {dut.r_tally.value}. \
+                                                    \nSim:\n\tData: {bin(data)}.\n\t\tCurrent Tally is {tally}.\n"
+
     print("Second Test!")
     control = 0
     for data in range(0b1111_1111 + 1):
@@ -83,7 +87,7 @@ async def test_tmds(dut):
         num_ones = await count_bits(tmds)
         num_zeros = 10 - num_ones
         tally += num_ones - num_zeros
-        assert dut.o_tmds.value.integer == tmds, f"For {bin(data)}.\n\t\tCurrent Tally is {dut.r_tally.value}.\n\t\tNum of Ones is {dut.v_num_ones.value}."
+        assert dut.o_tmds.value.integer == tmds, f"For {bin(data)}.\n\t\tCurrent Tally is {dut.r_tally.value}.\n\t\tNum of Ones is {dut.v_num_ones_tmds.value}."
         control = control+1 if control < 3 else 0
         
     print("Third Test!")

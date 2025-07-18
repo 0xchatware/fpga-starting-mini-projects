@@ -35,7 +35,7 @@ module Text_Overlay_TB();
     localparam FPS = 60;
     localparam NUM_CHAR = 256;
     localparam CHAR_BUFF_ROWS = 2;
-    localparam CHAR_BUFF_COLUMNS = 10;
+    localparam CHAR_BUFF_COLUMNS = 7;
     
     localparam LINES_TABLE = NUM_CHAR;
     localparam COLUMNS_TABLE = 8 * 16;
@@ -50,7 +50,7 @@ module Text_Overlay_TB();
     
     logic [$clog2(NUM_CHAR)-1:0] character;
     logic [$clog2(COLUMNS_TABLE)-1:0] offset; 
-    logic data, rd_en, rd_dv;
+    logic data, rd_en, rd_dv, wr_completed;
     
     string hello_str;
     initial hello_str = "Hello, world!";
@@ -93,7 +93,7 @@ module Text_Overlay_TB();
                             .FPS(FPS)
     ) Video_Signal_Inst(
         .i_clk_pxl(clk),
-        .i_reset(reset || !rd_dv),
+        .i_reset(reset || !wr_completed),
         .o_sx(sx),
         .o_sy(sy),
         .o_hsync(hsync),
@@ -114,6 +114,7 @@ module Text_Overlay_TB();
         .i_x(x),
         .i_y(y),
         .i_rd_en(rd_en),
+        .o_wr_completed(wr_completed),
         .o_rd_dv(rd_dv),
         .o_data(data)
     );
@@ -149,7 +150,7 @@ module Text_Overlay_TB();
     
     task run_test(input string str_arg);
         populate_ram(str_arg);
-        wait(rd_dv == 1);
+        wait(wr_completed == 1);
         rd_en = 1;
         error_count = 0;
         
@@ -158,7 +159,7 @@ module Text_Overlay_TB();
                 cur_char_set();
                 #(CLK_PERIOD/2);
                 if (cur_byte || data) begin
-                    assert (cur_byte == data) $display("Success!");
+                    assert (cur_byte == data && rd_dv) $display("Success!");
                         else begin 
                             $error("Values don't match for character '%s', sx=0x%0h, sy=0x%0h, data=%0b, cur_byte[sx]=%0b.",
                                     str_arg[cur_character], sx, sy, data, cur_byte);
