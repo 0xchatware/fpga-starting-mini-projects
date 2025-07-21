@@ -6,7 +6,6 @@ Mini_Project_Starter/
 ### XilinxISE ###
 # intermediate build files
 *.bgn
-*.bit
 *.bld
 *.cmd_log
 *.drc
