@@ -45,27 +45,37 @@ module Text_Overlay_720p_Top(
        .i_locked(w_clk_locked),
        .i_clk(i_sys_clk));
        
-    logic rst_src_pll = 1;
-    logic rst_src_pll_pre = 1;
-    always@(posedge w_clk_pxl) begin
-        rst_src_pll = rst_src_pll_pre;
-        rst_src_pll_pre = !w_clk_locked;
+    logic r_rst_src_pll;
+    logic r_rst_src_pll_pre;
+    
+    always_ff@(posedge w_clk_pxl) begin
+        r_rst_src_pll <= r_rst_src_pll_pre;
+        r_rst_src_pll_pre <= !w_clk_locked;
     end
     
     // Creates a reset state machine
-    logic [$clog2(RESET_TIMEOUT)-1:0] reset_count = 0;
-    logic clear_counter = 1;
-    logic master_reset = 1;
+    logic [$clog2(RESET_TIMEOUT)-1:0] r_reset_count;
+    logic r_clear_counter;
+    logic w_master_reset;
     logic r_text_write_completed;
+    
+    initial begin : reset_initial_values
+        r_rst_src_pll = 1;
+        r_rst_src_pll_pre = 1;
+        r_reset_count = 0;
+        r_clear_counter = 0;
+        w_master_reset = 1;
+    end
+    
     always_ff@(posedge w_clk_pxl)
     begin
-        clear_counter <= rst_src_pll || !r_text_write_completed;
-        master_reset <= (reset_count != RESET_TIMEOUT);
+        r_clear_counter <= r_rst_src_pll || !r_text_write_completed;
+        w_master_reset <= (r_reset_count != RESET_TIMEOUT);
         
-        if (clear_counter)
-          reset_count <= 0;
-        else if (reset_count != RESET_TIMEOUT)
-          reset_count <= reset_count + 1;
+        if (r_clear_counter)
+          r_reset_count <= 0;
+        else if (r_reset_count != RESET_TIMEOUT)
+          r_reset_count <= r_reset_count + 1;
     end 
     
     logic [$clog2(TOTAL_HOR_PIXEL)-1:0] w_sx;
@@ -84,7 +94,7 @@ module Text_Overlay_720p_Top(
         .FPS(60)
     )Video_Signal_Inst(
         .i_clk_pxl(w_clk_pxl),
-        .i_reset(master_reset),
+        .i_reset(w_master_reset),
         .o_sx(w_sx),
         .o_sy(w_sy),
         .o_hsync(w_hsync),
@@ -98,10 +108,12 @@ module Text_Overlay_720p_Top(
     logic [$clog2(TOTAL_VER_PIXEL)-1:0] r_text_box_y;
     logic [HELLO_WORLD_CHAR_NUM-1:0][7:0] r_characters;
     
-    assign r_text_box_x = 0;
-    assign r_text_box_y = 0;
-    assign r_text_en = 1;
-    assign r_characters = "Hello, world!";
+    initial begin : text_overlay_initial_values
+        r_text_box_x = 0;
+        r_text_box_y = 0;
+        r_text_en = 1;
+        r_characters = "Hello, world!";
+    end
     
     Text_Overlay#(.HORIZONTAL_WIDTH(TOTAL_HOR_PIXEL),
                   .VERTICAL_WIDTH(TOTAL_VER_PIXEL),
@@ -131,11 +143,10 @@ module Text_Overlay_720p_Top(
     
     logic [9:0] w_tmds_red_buffer, w_tmds_blue_buffer, w_tmds_green_buffer;
     logic w_tmds_signal_red, w_tmds_signal_blue, w_tmds_signal_green;
-    logic w_tmds_signal_red_buffer, w_tmds_signal_blue_buffer, w_tmds_signal_green_buffer;
     
     TMDS_Encoder TMDS_Red (
         .i_clk(w_clk_pxl),
-        .i_rst(master_reset),
+        .i_rst(w_master_reset),
         .i_data(v_paint_r),
         .i_control(2'b00),
         .i_ve(w_de),
@@ -143,7 +154,7 @@ module Text_Overlay_720p_Top(
     
     TMDS_Encoder TMDS_Green (
         .i_clk(w_clk_pxl),
-        .i_rst(master_reset),
+        .i_rst(w_master_reset),
         .i_data(v_paint_g),
         .i_control(2'b00),
         .i_ve(w_de),
@@ -151,7 +162,7 @@ module Text_Overlay_720p_Top(
     
     TMDS_Encoder TMDS_Blue (
         .i_clk(w_clk_pxl),
-        .i_rst(master_reset),
+        .i_rst(w_master_reset),
         .i_data(v_paint_b),
         .i_control({w_vsync, w_hsync}),
         .i_ve(w_de),
@@ -160,21 +171,21 @@ module Text_Overlay_720p_Top(
     TMDS_Serializer TMDS_Red_Serializer (
         .i_clk_pixel(w_clk_pxl),
         .i_clk_5x(w_clk_pxl_5x),
-        .i_rst(master_reset),
+        .i_rst(w_master_reset),
         .i_tmds(w_tmds_red_buffer),
         .o_tmds(w_tmds_signal_red));
         
     TMDS_Serializer TMDS_Green_Serializer (
         .i_clk_pixel(w_clk_pxl),
         .i_clk_5x(w_clk_pxl_5x),
-        .i_rst(master_reset),
+        .i_rst(w_master_reset),
         .i_tmds(w_tmds_green_buffer),
         .o_tmds(w_tmds_signal_green));
     
     TMDS_Serializer TMDS_Blue_Serializer (
         .i_clk_pixel(w_clk_pxl),
         .i_clk_5x(w_clk_pxl_5x),
-        .i_rst(master_reset),
+        .i_rst(w_master_reset),
         .i_tmds(w_tmds_blue_buffer),
         .o_tmds(w_tmds_signal_blue));
     

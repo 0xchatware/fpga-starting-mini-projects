@@ -53,8 +53,8 @@ module Text_Overlay#(parameter HORIZONTAL_WIDTH=1650,
     
     Font_ROM#(.HORIZONTAL_WIDTH(HORIZONTAL_WIDTH),
               .VERTICAL_WIDTH(VERTICAL_WIDTH),
-              .CHAR_BUFF_COLUMNS(COLUMNS),
-              .CHAR_BUFF_ROWS(ROWS)
+              .COLUMNS(COLUMNS),
+              .ROWS(ROWS)
     ) Char_Data_Inst (
         .i_clk(i_clk),
         .i_wr_character(r_character),
@@ -88,11 +88,12 @@ module Text_Overlay#(parameter HORIZONTAL_WIDTH=1650,
         end
     end
     
-    function int simple_hash(input logic [NUM_CHAR-1:0][7:0] characters);
+    typedef int unsigned uint32_t;
+    function uint32_t simple_hash(input logic [NUM_CHAR-1:0][7:0] characters);
         simple_hash = 32'h00;
         for (int i=0; i < NUM_CHAR/4; i++) begin
             for (int j=0; j < 4; j++) begin
-                simple_hash ^= {24'h00, characters[i + j]} << (8 * j);
+                simple_hash ^= {24'h00, (characters[i + j])} << (8 * j);
             end
         end
     endfunction

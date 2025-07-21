@@ -54,7 +54,7 @@ module Video_Signal_Generator#(
     assign o_de = o_sx < ACTIVE_H_PIXELS && o_sy < ACTIVE_LINES;
     assign o_nf = o_sx == 0 && o_sy == 0;
     
-    always@(posedge i_clk_pxl)
+    always_ff@(posedge i_clk_pxl)
     begin
         if (i_reset) begin
             o_sx <= 0;

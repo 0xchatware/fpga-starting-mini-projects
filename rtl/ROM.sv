@@ -31,7 +31,6 @@ module ROM#(parameter WIDTH=8,
     );
     
     logic [WIDTH-1:0] r_mem [0:DEPTH-1];
-    logic [WIDTH-1:0] r_dout;
     
     initial begin
         if (FILE != "") begin

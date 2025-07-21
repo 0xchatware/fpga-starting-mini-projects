@@ -34,7 +34,6 @@ module TMDS_Encoder(
         .i_data(i_data),
         .o_qm(r_qm));
     
-    logic [9:0] v_next_tmds;
     logic signed [4:0] r_tally;
     int v_num_ones_qm;
     
@@ -44,7 +43,6 @@ module TMDS_Encoder(
         if (i_rst) begin
             r_tally <= 0;
             o_tmds <= 0;
-            v_next_tmds <= 0;
         end
         else begin
             if (i_ve) begin

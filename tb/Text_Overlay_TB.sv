@@ -67,14 +67,6 @@ module Text_Overlay_TB();
     logic [COLUMNS_TABLE-1:0] cur_data [0:HELLO_STR_SIZE-1]; // questionable
     logic cur_byte;
     
-    initial clk = 1;
-    initial reset = 0;
-    initial rd_en = 0;
-    initial x = 67;
-    initial y = 14;
-    initial cur_byte = 0;
-    initial error_count = 0;
-    
     assign #(CLK_PERIOD/2) clk = ~clk;
     
     always@(posedge clk) begin : delaying_tests_values
@@ -121,12 +113,18 @@ module Text_Overlay_TB();
     
     logic [COLUMNS_TABLE-1:0] font_data [0:LINES_TABLE-1];
     
-    initial begin : set_testing_char_table
+    initial begin : test_brench
         $display("Loading char into table.");
         $readmemh(FONT_FILE, font_data);
-    end
     
-    initial begin : test_brench
+        clk = 1;
+        reset = 0;
+        rd_en = 0;
+        x = 67;
+        y = 14;
+        cur_byte = 0;
+        error_count = 0;
+        
         for (int i = 0; i < CHAR_BUFF_ROWS*CHAR_BUFF_COLUMNS; i++) begin
             cur_data[i] = font_data[" "];
         end

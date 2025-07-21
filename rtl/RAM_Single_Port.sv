@@ -42,7 +42,7 @@ module RAM_Single_Port#(parameter WIDTH = 8,
             $readmemh(FILE, r_mem);
         end else if (INITIAL_ZERO == 1) begin
             for (int i = 0; i < DEPTH; i++)
-                r_mem[i] <= 0;
+                r_mem[i] = 0;
         end
     end
         
