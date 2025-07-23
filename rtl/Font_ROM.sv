@@ -25,7 +25,12 @@ module Font_ROM#(parameter HORIZONTAL_WIDTH=1650,
                  parameter VERTICAL_WIDTH=750,
                  parameter COLUMNS=12,
                  parameter ROWS=2,
-                 parameter FONT_NUM_CHAR=256)(
+                 parameter FONT_NUM_CHAR=256,
+                 parameter FONT_FILE="VGA8.F16.mem",
+                 parameter CHAR_PIXELS_X=8,
+                 parameter CHAR_PIXELS_Y=16,
+                 parameter SCALE_X=1,
+                 parameter SCALE_Y=1)(
     input wire i_clk,
     input wire [$clog2(FONT_NUM_CHAR)-1:0] i_wr_character,
     input wire [$clog2(COLUMNS)-1:0] i_wr_x_pos,
@@ -40,13 +45,10 @@ module Font_ROM#(parameter HORIZONTAL_WIDTH=1650,
     output logic o_rd_data
     );
     
-    localparam FONT_FILE = "VGA8.F16.mem";
-    localparam CHAR_PIXELS_Y = 16;
-    localparam CHAR_PIXELS_X = 8;
     localparam DEPTH = FONT_NUM_CHAR * CHAR_PIXELS_Y;
     localparam CHAR_TABLE_SIZE = COLUMNS * ROWS;
-    localparam PIXELS_X = CHAR_PIXELS_X * COLUMNS;
-    localparam PIXELS_Y = CHAR_PIXELS_Y * ROWS;
+    localparam PIXELS_X = CHAR_PIXELS_X * COLUMNS * SCALE_X;
+    localparam PIXELS_Y = CHAR_PIXELS_Y * ROWS * SCALE_Y;
     
     logic [$clog2(CHAR_TABLE_SIZE)-1:0] r_wr_character_addr, r_rd_character_addr;
     logic [$clog2(FONT_NUM_CHAR)-1:0] r_rd_character;
@@ -85,12 +87,12 @@ module Font_ROM#(parameter HORIZONTAL_WIDTH=1650,
         r_char_x = r_char_x_buff < $clog2(PIXELS_X) ? r_char_x_buff : $clog2(PIXELS_X)'(r_char_x_buff);
         r_char_y = r_char_y_buff < $clog2(PIXELS_Y) ? r_char_y_buff : $clog2(PIXELS_Y)'(r_char_y_buff);
         
-        r_rd_character_addr = (r_char_y / CHAR_PIXELS_Y) * COLUMNS + (r_char_x / CHAR_PIXELS_X);
+        r_rd_character_addr = r_char_y/(CHAR_PIXELS_Y*SCALE_Y)*COLUMNS + r_char_x/(CHAR_PIXELS_X*SCALE_X);
     end
         
     always_ff@(posedge i_clk) begin : Synchronous_Delays
         if (i_rd_en) begin
-            r_char_x_d <= $clog2(CHAR_PIXELS_X)'(r_char_x);
+            r_char_x_d <= $clog2(CHAR_PIXELS_X)'(r_char_x/SCALE_X);
             r_char_x_dd <= r_char_x_d;
             r_is_block <= is_block_zone();
             r_is_block_d <= r_is_block;
@@ -98,7 +100,7 @@ module Font_ROM#(parameter HORIZONTAL_WIDTH=1650,
     end
     
     assign r_wr_character_addr = i_wr_y_pos * COLUMNS + i_wr_x_pos;
-    assign r_char_addr = r_is_block ? {r_rd_character, $clog2(CHAR_PIXELS_Y)'(r_char_y)} : 0;
+    assign r_char_addr = r_is_block ? {r_rd_character, $clog2(CHAR_PIXELS_Y)'(r_char_y/SCALE_Y)} : 0;
     assign o_rd_data = r_is_block_d ? r_data[CHAR_PIXELS_X - 1 - r_char_x_dd] : 0;
                         
     function bit is_block_zone();

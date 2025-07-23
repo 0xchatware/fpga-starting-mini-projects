@@ -24,7 +24,12 @@
 module Text_Overlay#(parameter HORIZONTAL_WIDTH=1650,
                      parameter VERTICAL_WIDTH=750,
                      parameter COLUMNS=16,
-                     parameter NUM_CHAR=300)(
+                     parameter NUM_CHAR=300,
+                     parameter FONT_FILE="VGA8.F16.mem",
+                     parameter CHAR_PIXELS_X=8,
+                     parameter CHAR_PIXELS_Y=16,
+                     parameter SCALE_X=1,
+                     parameter SCALE_Y=1)(
     input wire i_clk,
     input wire [NUM_CHAR-1:0][7:0] i_characters,
     input wire [$clog2(HORIZONTAL_WIDTH)-1:0] i_sx,
@@ -54,7 +59,12 @@ module Text_Overlay#(parameter HORIZONTAL_WIDTH=1650,
     Font_ROM#(.HORIZONTAL_WIDTH(HORIZONTAL_WIDTH),
               .VERTICAL_WIDTH(VERTICAL_WIDTH),
               .COLUMNS(COLUMNS),
-              .ROWS(ROWS)
+              .ROWS(ROWS),
+              .FONT_FILE(FONT_FILE),
+              .CHAR_PIXELS_X(CHAR_PIXELS_X),
+              .CHAR_PIXELS_Y(CHAR_PIXELS_Y),
+              .SCALE_X(SCALE_X),
+              .SCALE_Y(SCALE_Y)
     ) Char_Data_Inst (
         .i_clk(i_clk),
         .i_wr_character(r_character),
@@ -74,11 +84,10 @@ module Text_Overlay#(parameter HORIZONTAL_WIDTH=1650,
         
         if (r_prog_start || r_prev_characters != r_cur_characters) begin
             r_i <= 0;
-            r_wr_en <= 1;
             o_wr_completed <= 0;
             r_prev_characters <= r_cur_characters;
             r_prog_start <= 0;
-        end else if (r_wr_en) begin
+        end else if (!o_wr_completed) begin
             r_character <= i_characters[NUM_CHAR-r_i-1];
             r_wr_x_pos <= r_i % COLUMNS;
             r_wr_y_pos <= r_i / COLUMNS;

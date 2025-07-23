@@ -37,8 +37,10 @@ module Text_Overlay_TB();
     localparam CHAR_BUFF_ROWS = 2;
     localparam CHAR_BUFF_COLUMNS = 7;
     
+    localparam CHAR_PIX_X = 8;
+    localparam CHAR_PIX_Y = 16;
     localparam LINES_TABLE = NUM_CHAR;
-    localparam COLUMNS_TABLE = 8 * 16;
+    localparam COLUMNS_TABLE = CHAR_PIX_X * CHAR_PIX_Y;
     localparam FONT_FILE = "VGA8_testing.F16.mem";
     
     logic clk, reset;
@@ -50,7 +52,7 @@ module Text_Overlay_TB();
     
     logic [$clog2(NUM_CHAR)-1:0] character;
     logic [$clog2(COLUMNS_TABLE)-1:0] offset; 
-    logic data, rd_en, rd_dv, wr_completed;
+    logic data, rd_en, rd_en2, rd_dv, rd_dv2, wr_completed;
     
     string hello_str;
     initial hello_str = "Hello, world!";
@@ -97,7 +99,10 @@ module Text_Overlay_TB();
     Text_Overlay#(.HORIZONTAL_WIDTH(TOTAL_HOR_PIXEL),
                   .VERTICAL_WIDTH(TOTAL_VER_PIXEL),
                   .COLUMNS(CHAR_BUFF_COLUMNS),
-                  .NUM_CHAR(HELLO_STR_SIZE)
+                  .NUM_CHAR(HELLO_STR_SIZE),
+                  .FONT_FILE(FONT_FILE),
+                  .CHAR_PIXELS_X(CHAR_PIX_X),
+                  .CHAR_PIXELS_Y(CHAR_PIX_Y)
     ) UUT (
         .i_clk(clk),
         .i_characters(str),
@@ -111,6 +116,28 @@ module Text_Overlay_TB();
         .o_data(data)
     );
     
+    Text_Overlay#(.HORIZONTAL_WIDTH(TOTAL_HOR_PIXEL),
+                  .VERTICAL_WIDTH(TOTAL_VER_PIXEL),
+                  .COLUMNS(CHAR_BUFF_COLUMNS),
+                  .NUM_CHAR(HELLO_STR_SIZE),
+                  .FONT_FILE(FONT_FILE),
+                  .CHAR_PIXELS_X(CHAR_PIX_X),
+                  .CHAR_PIXELS_Y(CHAR_PIX_Y),
+                  .SCALE_X(2),
+                  .SCALE_Y(2)
+    ) UUT_2 (
+        .i_clk(clk),
+        .i_characters(str),
+        .i_sx(sx),
+        .i_sy(sy),
+        .i_x(x),
+        .i_y(y),
+        .i_rd_en(rd_en2),
+        .o_wr_completed(wr_completed),
+        .o_rd_dv(rd_dv2),
+        .o_data(data)
+    );
+    
     logic [COLUMNS_TABLE-1:0] font_data [0:LINES_TABLE-1];
     
     initial begin : test_brench
@@ -120,8 +147,9 @@ module Text_Overlay_TB();
         clk = 1;
         reset = 0;
         rd_en = 0;
+        rd_en2 = 0;
         x = 67;
-        y = 14;
+        y = 13;
         cur_byte = 0;
         error_count = 0;
         
@@ -134,30 +162,37 @@ module Text_Overlay_TB();
         #(CLK_PERIOD);
         reset = 0;
         
-        run_test(hello_str);
+        rd_en = 1;
+        run_test(hello_str, 1, rd_en, rd_dv);
+        rd_en = 0;
         
         $display("Changing string value.");
         str = str_2;
         #(CLK_PERIOD);
+        rd_en = 1;
+        run_test(hello_only_str, 1, rd_en, rd_dv);
+        rd_en = 0;
+
+        $display("Changing scaling.");
+        #(CLK_PERIOD);
+        rd_en2 = 1;
+        run_test(hello_only_str, 2, rd_en2, rd_dv2);
+        rd_en2 = 0;
         
-        run_test(hello_only_str);
-        
-        $finish;
-        
+        $finish;        
     end
     
-    task run_test(input string str_arg);
+    task run_test(input string str_arg, input int scale, input logic rd_en_val, input logic rd_dv_val);
         populate_ram(str_arg);
         wait(wr_completed == 1);
-        rd_en = 1;
         error_count = 0;
         
         for (int i = 0; i < TOTAL_VER_PIXEL * TOTAL_HOR_PIXEL; i++) begin
-            if (sx >= x && sx < (CHAR_BUFF_COLUMNS*8+x) && sy >= y && sy <= (CHAR_BUFF_ROWS*16+y)) begin
-                cur_char_set();
+            if (sx >= x && sx < (CHAR_BUFF_COLUMNS*8*scale+x) && sy >= y && sy <= (CHAR_BUFF_ROWS*16*scale+y)) begin
+                cur_char_set(scale);
                 #(CLK_PERIOD/2);
                 if (cur_byte || data) begin
-                    assert (cur_byte == data && rd_dv) $display("Success!");
+                    assert (cur_byte == data) $display("Success!");
                         else begin 
                             $error("Values don't match for character '%s', sx=0x%0h, sy=0x%0h, data=%0b, cur_byte[sx]=%0b.",
                                     str_arg[cur_character], sx, sy, data, cur_byte);
@@ -173,7 +208,7 @@ module Text_Overlay_TB();
         $display("Error count: %d", error_count);
     endtask
     
-    task populate_ram (input string str_arg);
+    task automatic populate_ram (input string str_arg);
         for (int i = 0; i < str_arg.len(); i++) begin
             character = str_arg[i];
             cur_data[i] = font_data[character];
@@ -181,11 +216,11 @@ module Text_Overlay_TB();
         end
     endtask
     
-    task cur_char_set;
-        cur_char_x = (sx_d-x)/8;
-        cur_char_y = (sy_d-y)/16;
+    task automatic cur_char_set (input int scale);
+        cur_char_x = (sx_d-x)/(8*scale);
+        cur_char_y = (sy_d-y)/(16*scale);
         cur_character = cur_char_x + cur_char_y * CHAR_BUFF_COLUMNS;
-        cur_pos = (sy_d-y-cur_char_y*16) * 8 + (sx_d-x-cur_char_x*8);
+        cur_pos = (sy_d-y-cur_char_y*16*scale)/scale * 8 + (sx_d-x-cur_char_x*8*scale)/scale;
         offset = COLUMNS_TABLE-cur_pos-1;
         cur_byte = cur_character < HELLO_STR_SIZE ? cur_data[cur_character][offset] : 0;
     endtask

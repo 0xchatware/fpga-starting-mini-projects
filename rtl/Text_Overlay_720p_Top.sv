@@ -57,7 +57,7 @@ module Text_Overlay_720p_Top(
     logic [$clog2(RESET_TIMEOUT)-1:0] r_reset_count;
     logic r_clear_counter;
     logic w_master_reset;
-    logic r_text_write_completed;
+    logic r_text_write_completed1, r_text_write_completed2, r_text_write_completed3;
     
     initial begin : reset_initial_values
         r_rst_src_pll = 1;
@@ -69,7 +69,7 @@ module Text_Overlay_720p_Top(
     
     always_ff@(posedge w_clk_pxl)
     begin
-        r_clear_counter <= r_rst_src_pll || !r_text_write_completed;
+        r_clear_counter <= r_rst_src_pll || !r_text_write_completed1 || !r_text_write_completed2 || !r_text_write_completed3;
         w_master_reset <= (r_reset_count != RESET_TIMEOUT);
         
         if (r_clear_counter)
@@ -103,14 +103,18 @@ module Text_Overlay_720p_Top(
         .o_nf(),
         .o_fc());
     
-    logic r_text_en, r_text_data, r_text_rd_dv;
-    logic [$clog2(TOTAL_HOR_PIXEL)-1:0] r_text_box_x;
-    logic [$clog2(TOTAL_VER_PIXEL)-1:0] r_text_box_y;
+    logic r_text_en, r_text_data1, r_text_data2, r_text_data3, r_text_rd_dv1, r_text_rd_dv2, r_text_rd_dv3;
+    logic [$clog2(TOTAL_HOR_PIXEL)-1:0] r_text_box_x1, r_text_box_x2, r_text_box_x3;
+    logic [$clog2(TOTAL_VER_PIXEL)-1:0] r_text_box_y1, r_text_box_y2, r_text_box_y3;
     logic [HELLO_WORLD_CHAR_NUM-1:0][7:0] r_characters;
     
     initial begin : text_overlay_initial_values
-        r_text_box_x = 0;
-        r_text_box_y = 0;
+        r_text_box_x1 = 0;
+        r_text_box_y1 = 0;
+        r_text_box_x2 = 100;
+        r_text_box_y2 = 100;
+        r_text_box_x3 = 200;
+        r_text_box_y3 = 200;
         r_text_en = 1;
         r_characters = "Hello, world!";
     end
@@ -118,26 +122,75 @@ module Text_Overlay_720p_Top(
     Text_Overlay#(.HORIZONTAL_WIDTH(TOTAL_HOR_PIXEL),
                   .VERTICAL_WIDTH(TOTAL_VER_PIXEL),
                   .COLUMNS(TEXT_COLUMNS),
-                  .NUM_CHAR(HELLO_WORLD_CHAR_NUM)
+                  .NUM_CHAR(HELLO_WORLD_CHAR_NUM),
+                  .FONT_FILE("VGA8.F16.mem"),
+                  .CHAR_PIXELS_X(8),
+                  .CHAR_PIXELS_Y(16),
+                  .SCALE_X(1),
+                  .SCALE_Y(1)
     ) Hello_Text_Box_Inst (
         .i_clk(w_clk_pxl),
         .i_characters(r_characters),
         .i_sx(w_sx),
         .i_sy(w_sy),
-        .i_x(r_text_box_x),
-        .i_y(r_text_box_y),
+        .i_x(r_text_box_x1),
+        .i_y(r_text_box_y1),
         .i_rd_en(r_text_en),
-        .o_wr_completed(r_text_write_completed),
-        .o_rd_dv(r_text_rd_dv),
-        .o_data(r_text_data)
+        .o_wr_completed(r_text_write_completed1),
+        .o_rd_dv(r_text_rd_dv1),
+        .o_data(r_text_data1)
+    );
+    
+    Text_Overlay#(.HORIZONTAL_WIDTH(TOTAL_HOR_PIXEL),
+                  .VERTICAL_WIDTH(TOTAL_VER_PIXEL),
+                  .COLUMNS(TEXT_COLUMNS),
+                  .NUM_CHAR(HELLO_WORLD_CHAR_NUM),
+                  .FONT_FILE("VGA8.F16.mem"),
+                  .CHAR_PIXELS_X(8),
+                  .CHAR_PIXELS_Y(16),
+                  .SCALE_X(2),
+                  .SCALE_Y(2)
+    ) Hello_Text_Box_2x_Inst (
+        .i_clk(w_clk_pxl),
+        .i_characters(r_characters),
+        .i_sx(w_sx),
+        .i_sy(w_sy),
+        .i_x(r_text_box_x2),
+        .i_y(r_text_box_y2),
+        .i_rd_en(r_text_en),
+        .o_wr_completed(r_text_write_completed2),
+        .o_rd_dv(r_text_rd_dv2),
+        .o_data(r_text_data2)
+    );
+    
+    Text_Overlay#(.HORIZONTAL_WIDTH(TOTAL_HOR_PIXEL),
+                  .VERTICAL_WIDTH(TOTAL_VER_PIXEL),
+                  .COLUMNS(TEXT_COLUMNS),
+                  .NUM_CHAR(HELLO_WORLD_CHAR_NUM),
+                  .FONT_FILE("KPRO2K_D.F16.mem"),
+                  .CHAR_PIXELS_X(8),
+                  .CHAR_PIXELS_Y(16),
+                  .SCALE_X(9),
+                  .SCALE_Y(9)
+    ) Hello_Text_Box_9x_Inst (
+        .i_clk(w_clk_pxl),
+        .i_characters(r_characters),
+        .i_sx(w_sx),
+        .i_sy(w_sy),
+        .i_x(r_text_box_x3),
+        .i_y(r_text_box_y3),
+        .i_rd_en(r_text_en),
+        .o_wr_completed(r_text_write_completed3),
+        .o_rd_dv(r_text_rd_dv3),
+        .o_data(r_text_data3)
     );
         
     logic [COLOUR_BITS-1:0] v_paint_r, v_paint_g, v_paint_b;
     always_ff@(posedge w_clk_pxl) begin
-        if (r_text_rd_dv) begin
-            v_paint_r <= r_text_data ? 8'hFF : 8'h00;
-            v_paint_g <= r_text_data ? 8'hFF : 8'h00;
-            v_paint_b <= r_text_data ? 8'hFF : 8'h00;
+        if (r_text_rd_dv1 && r_text_rd_dv2 && r_text_rd_dv3) begin
+            v_paint_r <= r_text_data1 || r_text_data2 || r_text_data3 ? 8'hFF : 8'h00;
+            v_paint_g <= r_text_data1 || r_text_data2 || r_text_data3 ? 8'hFF : 8'h00;
+            v_paint_b <= r_text_data1 || r_text_data2 || r_text_data3 ? 8'hFF : 8'h00;
         end
     end
     
