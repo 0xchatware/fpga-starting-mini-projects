@@ -3,15 +3,13 @@ from math import atan, atan, atanh
 
 def main(type, iterations, int_bits, fra_bits):
     with open(type + '.mem', 'w') as f:
+        j = 1
         for i in range(iterations):
-            if i == 0 and type == "tanh":
-                val = 0
-            else:
-                val = atan(2**(-i)) if type == "tan" else atanh(2**(-i))
-                
+            val = atan(2**(-i)) if type == "tan" else atanh(2**(-j))
             fra = int((val - int(val)) * 2**fra_bits)
             out =  (fra) & create_full_bin(int_bits + fra_bits)
-            f.write(hex(out)[2:] + '\n')
+            f.write('0' + hex(out)[2:] + '\n')
+            j+=1
             
 def create_full_bin(num):
     val = 0
