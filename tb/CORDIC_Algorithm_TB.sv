@@ -17,6 +17,7 @@
 // Revision 0.01 - File Created
 // Additional Comments: www.xilinx.com/publications/archives/xcell/Xcell79.pdf
 //                      https://digitalsystemdesign.in/wp-content/uploads/2019/01/cordic1.pdf
+//                      https://www.secs.oakland.edu/~llamocca/Courses/ECE5736/S22/FinalProject/Group3_hypcordic.pdf
 // 
 //////////////////////////////////////////////////////////////////////////////////
 
@@ -32,6 +33,7 @@ module CORDIC_Algorithm_TB();
     localparam LINEAR = 0;
     localparam CIRCULAR = 1;
     
+    localparam KH_1 = 1.20749;
     localparam NONE = 10.0;
     
     logic clk, rst;
@@ -57,9 +59,9 @@ module CORDIC_Algorithm_TB();
     );
     
     localparam TESTS = 7;
-    real vec_x [0:TESTS-1] = {0.25, -0.45, 0.87, NONE, NONE, NONE, 1.00};
-    real vec_y [0:TESTS-1] = {NONE,  NONE, 0.12, NONE, NONE, NONE, 1.00};
-    real vec_z [0:TESTS-1] = {0.15,  0.23, NONE, 1, 0.5, 0.0909, NONE};
+    real vec_x [0:TESTS-1] = {0.25, -0.45, 0.87, NONE, 1.09, NONE, 0.80};
+    real vec_y [0:TESTS-1] = {NONE,  NONE, 0.12, NONE, 1.09, NONE, 1.00};
+    real vec_z [0:TESTS-1] = {0.15,  0.23, NONE, 1.00, NONE, 0.0909, NONE};
     int vec_mode [0:TESTS-1] = {LINEAR, LINEAR, LINEAR, HYPERBOLIC, HYPERBOLIC,
                           CIRCULAR, CIRCULAR};
     bit vec_rot_en [0:TESTS-1] = {1, 1, 0, 1, 0, 1, 0};
@@ -118,9 +120,9 @@ module CORDIC_Algorithm_TB();
                         result[1] = to_real(o_y);
                         operation[1] = "Sinh";
                     end else begin
-                        expected[0] = $atanh(vec_z[i]);
-                        result[0] = to_real(o_z);
-                        operation[0] = "Atanh"; 
+                        expected[0] = $sqrt(vec_x[i]) * KH_1;
+                        result[0] = to_real(o_x);
+                        operation[0] = "Square Root Computation"; 
                         operation[1] = "None";
                     end
                 end
