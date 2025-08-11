@@ -20,12 +20,13 @@
 // Additional Comments: www.xilinx.com/publications/archives/xcell/Xcell79.pdf
 //                      https://digitalsystemdesign.in/wp-content/uploads/2019/01/cordic1.pdf
 //                      https://www.secs.oakland.edu/~llamocca/Courses/ECE5736/S22/FinalProject/Group3_hypcordic.pdf
+//                      https://en.wikibooks.org/wiki/Digital_Circuits/CORDIC
 // 
 //////////////////////////////////////////////////////////////////////////////////
 
 
 module CORDIC_Algorithm #(parameter N_ITERATION=12, // best practice, number of frac bits == iteration
-                          parameter INTEGER_BITS=2, // signed bit included
+                          parameter INTEGER_BITS=3, // signed bit included
                           parameter FRACTIONAL_BITS=30,
                           parameter BITS=INTEGER_BITS+FRACTIONAL_BITS)(
         input wire i_clk,
@@ -48,7 +49,7 @@ module CORDIC_Algorithm #(parameter N_ITERATION=12, // best practice, number of 
     localparam ONE_FRACTIONAL = int_to_fixed(1);
     localparam QUARTER_ONE_FRACTIONAL = (BITS)'(int'(0.25 * 2**FRACTIONAL_BITS));
     localparam K_CIRCULAR = (BITS)'(int'(0.6072529350088812561694 * 2**FRACTIONAL_BITS));
-    localparam K_HYPERBOLIC = (BITS)'(int'(1.20749 * 2**FRACTIONAL_BITS));
+    localparam K_HYPERBOLIC = (BITS)'(int'(1.207497067763 * 2**FRACTIONAL_BITS));
     
     localparam TAN_FILE = "tan.mem";
     localparam TANH_FILE = "tanh.mem";
@@ -94,8 +95,8 @@ module CORDIC_Algorithm #(parameter N_ITERATION=12, // best practice, number of 
                                     r_y[i] <= 0;
                                     r_z[i] <= i_z;
                                 end else begin
-                                    r_x[i] <= i_x + QUARTER_ONE_FRACTIONAL;
-                                    r_y[i] <= i_y - QUARTER_ONE_FRACTIONAL;
+                                    r_x[i] <= i_x;
+                                    r_y[i] <= i_y;
                                     r_z[i] <= 0;
                                 end
                             end

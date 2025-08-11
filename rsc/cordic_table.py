@@ -1,5 +1,5 @@
 import sys
-from math import atan, atan, atanh
+from math import atan, atan, atanh, sqrt
 
 def main(iterations, int_bits, fra_bits):
     with open('tan.mem', 'w') as f:
@@ -22,15 +22,18 @@ def main(iterations, int_bits, fra_bits):
             
     with open('cordic_offset.mem', 'w') as f:
         cur_offset = 0
+        an = 1
         k = find_k(1)
         prev_i = 1
         for i in range(iterations):
+            an *= sqrt(1 - 2**(-2 * prev_i))
             if prev_i < k:
                 prev_i = i + 1
             else:
                 cur_offset += 1
                 k = find_k(k)
             f.write('0' + hex(cur_offset)[2:] + '\n')
+            print(an)
             
 def find_k(i): 
     return 3 * i + 1
