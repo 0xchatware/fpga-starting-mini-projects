@@ -31,14 +31,18 @@ module CORDIC_Algorithm #(parameter N_ITERATION=12, // best practice, number of 
                           parameter BITS=INTEGER_BITS+FRACTIONAL_BITS)(
         input wire i_clk,
         input wire i_rst,
+        input wire i_ready,
         input wire signed [BITS-1:0] i_x,
         input wire signed [BITS-1:0] i_y,
         input wire signed [BITS-1:0] i_z,
         input wire signed [1:0] i_mode,
         input wire i_rot_en, // if not i_rot_en, vectoring mode
+        output wire o_valid,
         output wire signed [BITS-1:0] o_x,
         output wire signed [BITS-1:0] o_y,
-        output wire signed [BITS-1:0] o_z
+        output wire signed [BITS-1:0] o_z,
+        output wire signed [1:0] o_mode,
+        output wire o_rot_en
     );
     
     localparam HYPERBOLIC = -1;
@@ -47,7 +51,6 @@ module CORDIC_Algorithm #(parameter N_ITERATION=12, // best practice, number of 
     
     localparam TWO_FRACTIONAL = int_to_fixed(2);
     localparam ONE_FRACTIONAL = int_to_fixed(1);
-    localparam QUARTER_ONE_FRACTIONAL = (BITS)'(int'(0.25 * 2**FRACTIONAL_BITS));
     localparam K_CIRCULAR = (BITS)'(int'(0.6072529350088812561694 * 2**FRACTIONAL_BITS));
     localparam K_HYPERBOLIC = (BITS)'(int'(1.207497067763 * 2**FRACTIONAL_BITS));
     
@@ -55,6 +58,7 @@ module CORDIC_Algorithm #(parameter N_ITERATION=12, // best practice, number of 
     localparam TANH_FILE = "tanh.mem";
     localparam OFFSET_FILE = "cordic_offset.mem";
     localparam OFFSET_BITS = 4;
+    
     logic signed [BITS-1:0] r_tan_mem [0:N_ITERATION-1];
     logic signed [BITS-1:0] r_tanh_mem [0:N_ITERATION-1];
     logic [OFFSET_BITS-1:0] r_offset_mem [0:N_ITERATION-1];
@@ -74,6 +78,7 @@ module CORDIC_Algorithm #(parameter N_ITERATION=12, // best practice, number of 
     logic signed [BITS-1:0] r_z [0:N_ITERATION];
     logic signed [1:0] r_mode [0:N_ITERATION];
     logic r_rot_en [0:N_ITERATION];
+    logic r_valid [0:N_ITERATION];
     
     generate
         for (genvar i=0; i<=N_ITERATION; i++) begin // i == 0 : INITIAL VALUE
@@ -84,10 +89,12 @@ module CORDIC_Algorithm #(parameter N_ITERATION=12, // best practice, number of 
                     r_z[i] <= 0;
                     r_mode[i] <= 0;
                     r_rot_en[i] <= 0;
+                    r_valid[i] <= 0;
                 end else begin
                     if (i == 0) begin
                         r_mode[i] <= i_mode;
                         r_rot_en[i] <= i_rot_en;
+                        r_valid[i] <= i_ready;
                         case (i_mode)
                             HYPERBOLIC: begin
                                 if (i_rot_en) begin
@@ -144,6 +151,7 @@ module CORDIC_Algorithm #(parameter N_ITERATION=12, // best practice, number of 
                         
                         r_mode[i] <= r_mode[i-1];
                         r_rot_en[i] <= r_rot_en[i-1];
+                        r_valid[i] <= r_valid[i-1];
                     end
                 end
             end
@@ -153,6 +161,9 @@ module CORDIC_Algorithm #(parameter N_ITERATION=12, // best practice, number of 
     assign o_x = r_x[N_ITERATION];
     assign o_y = r_y[N_ITERATION];
     assign o_z = r_z[N_ITERATION];
+    assign o_valid = r_valid[N_ITERATION];
+    assign o_mode = r_mode[N_ITERATION];
+    assign o_rot_en = r_rot_en[N_ITERATION];
     
     function logic signed [BITS-1:0] get_dir(input logic is_rot_en, // rot_en is not the same for all z, x for hyperbolic
                            input logic signed [BITS-1:0] y,
@@ -160,9 +171,7 @@ module CORDIC_Algorithm #(parameter N_ITERATION=12, // best practice, number of 
                            input logic signed [BITS-1:0] value);
         if (is_rot_en)
             return z < 0 ? -value : value;
-        
         return y < 0 ? value : -value;
-        //return (is_rot_en && z < 0) || (!is_rot_en && y >= 0) ? -value : value;
     endfunction
     
     function logic signed [BITS-1:0] int_to_fixed(input logic [INTEGER_BITS-1:0] val);

@@ -40,32 +40,36 @@ module CORDIC_Algorithm_TB();
     
     logic clk, rst;
     logic signed [BITS-1:0] i_x, i_y, i_z, o_x, o_y, o_z;
-    logic signed [1:0] mode;
-    logic rot_en;
+    logic signed [1:0] mode, cur_mode;
+    logic rot_en, ready, valid, cur_rot_en;
     
     always #(CLK_PERIOD/2) clk = ~clk;
 
     CORDIC_Algorithm #(.N_ITERATION(N_ITERATION),
-                       .INTEGER_BITS(INT_BITS), // Q2.30 sign included
+                       .INTEGER_BITS(INT_BITS), // Q3.30 sign included
                        .FRACTIONAL_BITS(FRAC_BITS)) UUT (
         .i_clk(clk),
         .i_rst(rst),
         .i_x(i_x),
+        .i_ready(ready),
         .i_y(i_y),
         .i_z(i_z), //theta
         .i_mode(mode),
         .i_rot_en(rot_en), // if not i_rot_en, vectoring mode
+        .o_valid(valid),
         .o_x(o_x),
         .o_y(o_y),
-        .o_z(o_z)
+        .o_z(o_z),
+        .o_mode(cur_mode),
+        .o_rot_en(cur_rot_en)
     );
     
-    localparam TESTS = 7;
-    real vec_x [0:TESTS-1]     = {0.25,   -0.45,  0.87,   NONE,       0.60,       NONE,     0.80};
-    real vec_y [0:TESTS-1]     = {NONE,   NONE,   0.12,   NONE,       0.40,       NONE,     1.00};
-    real vec_z [0:TESTS-1]     = {0.15,   0.23,   NONE,   1.00,       NONE,       0.0909,   NONE};
-    int vec_mode [0:TESTS-1]   = {LINEAR, LINEAR, LINEAR, HYPERBOLIC, HYPERBOLIC, CIRCULAR, CIRCULAR};
-    bit vec_rot_en [0:TESTS-1] = {1,      1,      0,      1,          0,          1,        0};
+    localparam TESTS = 8;
+    real vec_x [0:TESTS-1]     = {0.25,   -0.45,  0.87,   NONE,       0.60,       NONE,     0.80,     0.50 + 0.25};
+    real vec_y [0:TESTS-1]     = {NONE,   NONE,   0.12,   NONE,       0.40,       NONE,     1.00,     0.50 - 0.25};
+    real vec_z [0:TESTS-1]     = {0.15,   0.23,   NONE,   1.00,       NONE,       0.0909,   NONE,     NONE};
+    int vec_mode [0:TESTS-1]   = {LINEAR, LINEAR, LINEAR, HYPERBOLIC, HYPERBOLIC, CIRCULAR, CIRCULAR, HYPERBOLIC};
+    bit vec_rot_en [0:TESTS-1] = {1,      1,      0,      1,          0,          1,        0,        0};
     
     real expected [1:0];
     real result [1:0];
@@ -79,6 +83,7 @@ module CORDIC_Algorithm_TB();
         i_z = 0;
         mode = 0;
         rot_en = 0;
+        ready = 0;
         
         #(CLK_PERIOD);
         rst = 1;
@@ -91,10 +96,13 @@ module CORDIC_Algorithm_TB();
             i_z = int'(vec_z[i] * 2**FRAC_BITS);
             mode = vec_mode[i];
             rot_en = vec_rot_en[i];
+            ready = 1;
             #(CLK_PERIOD);
         end
         
-        #(CLK_PERIOD * (N_ITERATION - $size(vec_x)+1))
+        ready = 0;
+        wait (valid == 1'b1);
+        #(CLK_PERIOD);
         
         for (int i=0; i<$size(vec_x); i++) begin
             case (vec_mode[i])

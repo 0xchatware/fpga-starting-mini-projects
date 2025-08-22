@@ -34,14 +34,15 @@ module Text_Overlay_TB();
     localparam TOTAL_VER_PIXEL = ACTIVE_LINES + V_FRONT_PORCH + V_SYNCH_WIDTH + V_BACK_PORCH;
     localparam FPS = 60;
     localparam NUM_CHAR = 256;
-    localparam CHAR_BUFF_ROWS = 2;
-    localparam CHAR_BUFF_COLUMNS = 7;
+    localparam CHAR_BUFF_ROWS = 1;
+    localparam CHAR_BUFF_COLUMNS = 13;
     
     localparam CHAR_PIX_X = 8;
     localparam CHAR_PIX_Y = 16;
     localparam LINES_TABLE = NUM_CHAR;
     localparam COLUMNS_TABLE = CHAR_PIX_X * CHAR_PIX_Y;
-    localparam FONT_FILE = "VGA8_testing.F16.mem";
+    localparam TESTING_FONT_FILE = "VGA8_testing.F16.mem";
+    localparam FONT_FILE = "VGA8.F16.mem";
     
     logic clk, reset;
     
@@ -52,18 +53,14 @@ module Text_Overlay_TB();
     
     logic [$clog2(NUM_CHAR)-1:0] character;
     logic [$clog2(COLUMNS_TABLE)-1:0] offset; 
-    logic data, rd_en, rd_en2, rd_dv, rd_dv2, wr_completed;
+    logic data, rd_en, rd_en2, rd_dv, rd_dv2, wr_completed, wr_ready;
     
-    string hello_str;
-    initial hello_str = "Hello, world!";
     localparam HELLO_STR_SIZE = 13;
-    logic [HELLO_STR_SIZE-1:0][7:0] str;
-    initial str = "Hello, world!";
+    localparam string hello_str = "Hello, world!";
+    logic [HELLO_STR_SIZE-1:0][7:0] str = "Hello, world!";
     
-    string hello_only_str;
-    initial hello_only_str = "Hello, hello!";
-    logic [HELLO_STR_SIZE-1:0][7:0] str_2;
-    initial str_2 = "Hello, hello!";
+    localparam string hello_only_str = "Hello, hello!";
+    logic [HELLO_STR_SIZE-1:0][7:0] str_2 = "Hello, hello!";
 
     int cur_character, cur_pos, cur_char_x, cur_char_y, error_count;
     logic [COLUMNS_TABLE-1:0] cur_data [0:HELLO_STR_SIZE-1]; // questionable
@@ -111,6 +108,7 @@ module Text_Overlay_TB();
         .i_x(x),
         .i_y(y),
         .i_rd_en(rd_en),
+        .i_wr_ready(wr_ready),
         .o_wr_completed(wr_completed),
         .o_rd_dv(rd_dv),
         .o_data(data)
@@ -133,6 +131,7 @@ module Text_Overlay_TB();
         .i_x(x),
         .i_y(y),
         .i_rd_en(rd_en2),
+        .i_wr_ready(wr_ready),
         .o_wr_completed(wr_completed),
         .o_rd_dv(rd_dv2),
         .o_data(data)
@@ -142,14 +141,14 @@ module Text_Overlay_TB();
     
     initial begin : test_brench
         $display("Loading char into table.");
-        $readmemh(FONT_FILE, font_data);
+        $readmemh(TESTING_FONT_FILE, font_data);
     
         clk = 1;
         reset = 0;
         rd_en = 0;
         rd_en2 = 0;
-        x = 67;
-        y = 13;
+        x = 0;
+        y = 0;
         cur_byte = 0;
         error_count = 0;
         
@@ -184,6 +183,9 @@ module Text_Overlay_TB();
     
     task run_test(input string str_arg, input int scale, input logic rd_en_val, input logic rd_dv_val);
         populate_ram(str_arg);
+        wr_ready = 1;
+        #(CLK_PERIOD);
+        wr_ready = 0;
         wait(wr_completed == 1);
         error_count = 0;
         

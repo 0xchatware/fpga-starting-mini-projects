@@ -4,9 +4,9 @@
 // Company: 
 // Engineer: 
 // 
-// Create Date: 07/08/2025 03:13:13 PM
+// Create Date: 08/13/2025 11:29:55 AM
 // Design Name: 
-// Module Name: Text_Overlay_720p_Top
+// Module Name: CORDIC_Algorithm_HDMI_Top
 // Project Name: 
 // Target Devices: 
 // Tool Versions: 
@@ -21,7 +21,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 
-module Text_Overlay_720p_Top(
+module CORDIC_Algorithm_HDMI_Top(
     input wire i_sys_clk,
     output logic [2:0] o_hdmi_tx_p,
     output logic [2:0] o_hdmi_tx_n,
@@ -33,9 +33,21 @@ module Text_Overlay_720p_Top(
     localparam TOTAL_HOR_PIXEL = 1650;
     localparam COLOUR_BITS = 8;
     localparam RESET_TIMEOUT = 93750000; // for 50ns and a 25MHz clock
-    localparam HELLO_WORLD_CHAR_NUM = 13;
-    localparam TEXT_COLUMNS = HELLO_WORLD_CHAR_NUM;
+    localparam CHAR_NUM = 8;
+    localparam TEXT_COLUMNS = CHAR_NUM;
     localparam NUM_CHAR = 256;
+    
+    localparam INT_BITS = 3;
+    localparam FRACTIONAL_BITS = 30;
+    localparam BITS = INT_BITS + FRACTIONAL_BITS;
+    localparam N_ITERATION = FRACTIONAL_BITS;
+    
+    localparam Z_VALUE = (BITS)'(int'(0.78 * 2**FRACTIONAL_BITS)); // takes 4 char
+    localparam DISPLAY_FRAC_CHAR = 2;
+    
+    localparam [1:0] HYPERBOLIC = -1;
+    localparam [1:0] LINEAR = 0;
+    localparam [1:0] CIRCULAR = 1;
     
     logic w_clk_pxl, w_clk_pxl_5x;
     logic w_clk_locked;
@@ -57,7 +69,7 @@ module Text_Overlay_720p_Top(
     logic [$clog2(RESET_TIMEOUT)-1:0] r_reset_count;
     logic r_clear_counter;
     logic w_master_reset;
-    logic r_text_write_completed1, r_text_write_completed2, r_text_write_completed3;
+    logic r_text_write_completed1;
     
     initial begin : reset_initial_values
         r_rst_src_pll = 1;
@@ -69,7 +81,7 @@ module Text_Overlay_720p_Top(
     
     always_ff@(posedge w_clk_pxl)
     begin
-        r_clear_counter <= r_rst_src_pll || !r_text_write_completed1 || !r_text_write_completed2 || !r_text_write_completed3;
+        r_clear_counter <= r_rst_src_pll || !r_text_write_completed1;
         w_master_reset <= (r_reset_count != RESET_TIMEOUT);
         
         if (r_clear_counter)
@@ -102,44 +114,70 @@ module Text_Overlay_720p_Top(
         .o_de(w_de),
         .o_nf(),
         .o_fc());
+        
+    logic w_cordic_ready, w_cordic_valid, w_cordic_rot_en_in, w_cordic_rot_en_out;
+    logic [BITS-1:0] w_cordic_x_in, w_cordic_y_in, w_cordic_z_in, w_cordic_x_out, w_cordic_y_out, w_cordic_z_out;
+    logic [1:0] w_cordic_mode_in, w_cordic_mode_out;
+    logic w_prev_cordic_ready;
     
-    logic r_text_en, r_text_data1, r_text_data2, r_text_data3, r_text_rd_dv1, r_text_rd_dv2, r_text_rd_dv3;
-    logic [$clog2(TOTAL_HOR_PIXEL)-1:0] r_text_box_x1, r_text_box_x2, r_text_box_x3;
-    logic [$clog2(TOTAL_VER_PIXEL)-1:0] r_text_box_y1, r_text_box_y2, r_text_box_y3;
-    logic [HELLO_WORLD_CHAR_NUM-1:0][7:0] r_characters;
-    logic r_text_wr_ready;
-    logic [$clog2(RESET_TIMEOUT)-1:0] r_text_ready_count;
+    initial begin
+        w_cordic_ready = 1;
+        w_prev_cordic_ready = 0;
+        w_cordic_mode_in = CIRCULAR;
+        w_cordic_rot_en_in = 1;
+        w_cordic_x_in = 0;
+        w_cordic_y_in = 0;
+        w_cordic_z_in = Z_VALUE;
+    end
+    
+    always_ff@(posedge w_clk_pxl) begin
+        if (w_prev_cordic_ready == 1)
+            w_cordic_ready <= 0;
+        else if (w_cordic_ready != w_prev_cordic_ready)
+            w_prev_cordic_ready <= w_cordic_ready;
+    end
+        
+    CORDIC_Algorithm #(.N_ITERATION(N_ITERATION),
+                       .INTEGER_BITS(INT_BITS), // Q3.30 sign included
+                       .FRACTIONAL_BITS(FRACTIONAL_BITS)) Cordic_Algorithm_Inst (
+        .i_clk(w_clk_pxl),
+        .i_rst(w_master_reset),
+        .i_ready(w_cordic_ready),
+        .i_x(w_cordic_x_in),
+        .i_y(w_cordic_y_in),
+        .i_z(w_cordic_z_in), //theta
+        .i_mode(w_cordic_mode_in),
+        .i_rot_en(w_cordic_rot_en_in), // if not i_rot_en, vectoring mode
+        .o_valid(w_cordic_valid),
+        .o_x(w_cordic_x_out),
+        .o_y(w_cordic_y_out),
+        .o_z(w_cordic_z_out),
+        .o_mode(w_cordic_mode_out),
+        .o_rot_en(w_cordic_rot_en_out)
+    );
+    
+    logic r_text_en, r_text_data1, r_text_rd_dv1;
+    logic [$clog2(TOTAL_HOR_PIXEL)-1:0] r_text_box_x1;
+    logic [$clog2(TOTAL_VER_PIXEL)-1:0] r_text_box_y1;
+    logic [CHAR_NUM-1:0][7:0] r_characters;
     
     initial begin : text_overlay_initial_values
         r_text_box_x1 = 0;
         r_text_box_y1 = 0;
-        r_text_box_x2 = 100;
-        r_text_box_y2 = 100;
-        r_text_box_x3 = 200;
-        r_text_box_y3 = 200;
         r_text_en = 1;
-        r_text_ready_count = 0;
-        r_characters = "Hello, world!";
+        r_characters = "cos() = ";
     end
-    
-    always_ff@(posedge w_clk_pxl) begin : text_ready_timer
-        r_text_wr_ready <= r_text_ready_count != RESET_TIMEOUT;
-          
-        if (r_text_ready_count != RESET_TIMEOUT)
-          r_text_ready_count <= r_text_ready_count + 1;
-    end
-    
     
     Text_Overlay#(.HORIZONTAL_WIDTH(TOTAL_HOR_PIXEL),
                   .VERTICAL_WIDTH(TOTAL_VER_PIXEL),
                   .COLUMNS(TEXT_COLUMNS),
-                  .NUM_CHAR(HELLO_WORLD_CHAR_NUM),
-                  .FONT_FILE("VGA8.F16.mem"),
+                  .NUM_CHAR(CHAR_NUM),
+                  .FONT_FILE("KPRO2K_D.F16.mem"),
                   .CHAR_PIXELS_X(8),
                   .CHAR_PIXELS_Y(16),
-                  .SCALE_X(1),
-                  .SCALE_Y(1)
-    ) Hello_Text_Box_Inst (
+                  .SCALE_X(2),
+                  .SCALE_Y(2)
+    ) Cordic_result_display (
         .i_clk(w_clk_pxl),
         .i_characters(r_characters),
         .i_sx(w_sx),
@@ -147,64 +185,17 @@ module Text_Overlay_720p_Top(
         .i_x(r_text_box_x1),
         .i_y(r_text_box_y1),
         .i_rd_en(r_text_en),
-        .i_wr_ready(r_text_wr_ready),
         .o_wr_completed(r_text_write_completed1),
         .o_rd_dv(r_text_rd_dv1),
         .o_data(r_text_data1)
     );
-    
-    Text_Overlay#(.HORIZONTAL_WIDTH(TOTAL_HOR_PIXEL),
-                  .VERTICAL_WIDTH(TOTAL_VER_PIXEL),
-                  .COLUMNS(TEXT_COLUMNS),
-                  .NUM_CHAR(HELLO_WORLD_CHAR_NUM),
-                  .FONT_FILE("VGA8.F16.mem"),
-                  .CHAR_PIXELS_X(8),
-                  .CHAR_PIXELS_Y(16),
-                  .SCALE_X(2),
-                  .SCALE_Y(2)
-    ) Hello_Text_Box_2x_Inst (
-        .i_clk(w_clk_pxl),
-        .i_characters(r_characters),
-        .i_sx(w_sx),
-        .i_sy(w_sy),
-        .i_x(r_text_box_x2),
-        .i_y(r_text_box_y2),
-        .i_rd_en(r_text_en),
-        .i_wr_ready(r_text_wr_ready),
-        .o_wr_completed(r_text_write_completed2),
-        .o_rd_dv(r_text_rd_dv2),
-        .o_data(r_text_data2)
-    );
-    
-    Text_Overlay#(.HORIZONTAL_WIDTH(TOTAL_HOR_PIXEL),
-                  .VERTICAL_WIDTH(TOTAL_VER_PIXEL),
-                  .COLUMNS(TEXT_COLUMNS),
-                  .NUM_CHAR(HELLO_WORLD_CHAR_NUM),
-                  .FONT_FILE("KPRO2K_D.F16.mem"),
-                  .CHAR_PIXELS_X(8),
-                  .CHAR_PIXELS_Y(16),
-                  .SCALE_X(9),
-                  .SCALE_Y(9)
-    ) Hello_Text_Box_9x_Inst (
-        .i_clk(w_clk_pxl),
-        .i_characters(r_characters),
-        .i_sx(w_sx),
-        .i_sy(w_sy),
-        .i_x(r_text_box_x3),
-        .i_y(r_text_box_y3),
-        .i_rd_en(r_text_en),
-        .i_wr_ready(r_text_wr_ready),
-        .o_wr_completed(r_text_write_completed3),
-        .o_rd_dv(r_text_rd_dv3),
-        .o_data(r_text_data3)
-    );
         
     logic [COLOUR_BITS-1:0] v_paint_r, v_paint_g, v_paint_b;
-    always_ff@(posedge w_clk_pxl) begin
-        if (r_text_rd_dv1 && r_text_rd_dv2 && r_text_rd_dv3) begin
-            v_paint_r <= r_text_data1 || r_text_data2 || r_text_data3 ? 8'hFF : 8'h00;
-            v_paint_g <= r_text_data1 || r_text_data2 || r_text_data3 ? 8'hFF : 8'h00;
-            v_paint_b <= r_text_data1 || r_text_data2 || r_text_data3 ? 8'hFF : 8'h00;
+    always_ff@(posedge w_clk_pxl) begin : set_display_values
+        if (r_text_rd_dv1) begin
+            v_paint_r <= r_text_data1 ? 8'hFF : 8'h34;
+            v_paint_g <= r_text_data1 ? 8'hFF : 8'h34;
+            v_paint_b <= r_text_data1 ? 8'hFF : 8'h34;
         end
     end
     

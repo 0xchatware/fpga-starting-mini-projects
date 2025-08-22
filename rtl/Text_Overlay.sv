@@ -37,24 +37,27 @@ module Text_Overlay#(parameter HORIZONTAL_WIDTH=1650,
     input wire [$clog2(HORIZONTAL_WIDTH)-1:0] i_x,
     input wire [$clog2(VERTICAL_WIDTH)-1:0] i_y,
     input wire i_rd_en,
+    input wire i_wr_ready,
     output logic o_wr_completed,
     output logic o_rd_dv,
     output logic o_data
     );
     
-    localparam NUM_OF_POSSIBLE_CHAR = 256;
-    localparam ROWS = (NUM_CHAR+COLUMNS-1)/(COLUMNS);
+    localparam shortint NUM_OF_POSSIBLE_CHAR = 256;
+    localparam shortint ROWS = (NUM_CHAR+COLUMNS-1)/(COLUMNS);
     
-    int r_prev_characters, r_cur_characters;
-    logic [$clog2(NUM_CHAR)-1:0] r_i;
-    bit r_prog_start;
+    localparam logic INITIAL_STATE = 1'b0;
+    localparam logic CALCULATION_STATE = 1'b1;
+    
+    logic [$clog2(NUM_CHAR)-1:0] r_i, r_i_synchronizer;
     
     logic [$clog2(NUM_OF_POSSIBLE_CHAR)-1:0] r_character;
     logic [$clog2(COLUMNS)-1:0] r_wr_x_pos;
     logic [$clog2(ROWS)-1:0] r_wr_y_pos;
     logic r_wr_en;
     
-    initial r_prog_start = 1;
+    logic r_cur_state;
+    initial r_cur_state = INITIAL_STATE;
     
     Font_ROM#(.HORIZONTAL_WIDTH(HORIZONTAL_WIDTH),
               .VERTICAL_WIDTH(VERTICAL_WIDTH),
@@ -80,32 +83,32 @@ module Text_Overlay#(parameter HORIZONTAL_WIDTH=1650,
         .o_rd_data(o_data));
         
     always_ff@(posedge i_clk) begin
-        r_cur_characters <= simple_hash(i_characters);
-        
-        if (r_prog_start || r_prev_characters != r_cur_characters) begin
-            r_i <= 0;
-            o_wr_completed <= 0;
-            r_prev_characters <= r_cur_characters;
-            r_prog_start <= 0;
-        end else if (!o_wr_completed) begin
-            r_character <= i_characters[NUM_CHAR-r_i-1];
-            r_wr_x_pos <= r_i % COLUMNS;
-            r_wr_y_pos <= r_i / COLUMNS;
-            r_wr_en <= r_i == NUM_CHAR ? 0 : 1;
-            o_wr_completed <= r_i == NUM_CHAR ? 1 : 0;
-            r_i <= r_i + 1;
-        end
+        case (r_cur_state)
+            INITIAL_STATE: begin
+                if (i_wr_ready) begin
+                    r_cur_state <= CALCULATION_STATE;
+                    r_i <= 0;
+                    r_i_synchronizer <= 0;
+                end
+            end
+            CALCULATION_STATE: begin
+                r_character <= i_characters[NUM_CHAR-r_i-1];
+                r_wr_x_pos <= r_i % COLUMNS;
+                r_wr_y_pos <= r_i / COLUMNS;
+                r_i <= r_i + 1;
+                
+                // r_i_synchronizer helps to add one cycle to r_i,
+                // if r_i == 13, the value will skip the calculations
+                // for the last character.
+                r_i_synchronizer <= r_i;
+                r_wr_en <= r_i_synchronizer == NUM_CHAR-1 ? 0 : 1;
+                r_cur_state <= r_i_synchronizer == NUM_CHAR-1 
+                                ? INITIAL_STATE : CALCULATION_STATE;
+            end
+        endcase
     end
     
-    typedef int unsigned uint32_t;
-    function uint32_t simple_hash(input logic [NUM_CHAR-1:0][7:0] characters);
-        simple_hash = 32'h00;
-        for (int i=0; i < NUM_CHAR/4; i++) begin
-            for (int j=0; j < 4; j++) begin
-                simple_hash ^= {24'h00, (characters[i + j])} << (8 * j);
-            end
-        end
-    endfunction
+    assign o_wr_completed = r_cur_state == INITIAL_STATE;
         
 endmodule
 `default_nettype wire
