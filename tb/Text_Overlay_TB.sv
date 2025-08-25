@@ -55,12 +55,18 @@ module Text_Overlay_TB();
     logic [$clog2(COLUMNS_TABLE)-1:0] offset; 
     logic data, rd_en, rd_en2, rd_dv, rd_dv2, wr_completed, wr_ready;
     
-    localparam HELLO_STR_SIZE = 13;
-    localparam string hello_str = "Hello, world!";
-    logic [HELLO_STR_SIZE-1:0][7:0] str = "Hello, world!";
+    localparam HELLO_STR_SIZE = 8;
+//    localparam string hello_str = "Hello, world!";
+//    logic [HELLO_STR_SIZE-1:0][7:0] str = "Hello, world!";
     
-    localparam string hello_only_str = "Hello, hello!";
-    logic [HELLO_STR_SIZE-1:0][7:0] str_2 = "Hello, hello!";
+//    localparam string hello_only_str = "Hello, hello!";
+//    logic [HELLO_STR_SIZE-1:0][7:0] str_2 = "Hello, hello!";
+
+    localparam string hello_str = "cos() = ";
+    logic [HELLO_STR_SIZE-1:0][7:0] str = "cos() = ";
+    
+    localparam string hello_only_str = "sin() = ";
+    logic [HELLO_STR_SIZE-1:0][7:0] str_2 = "sin() = ";
 
     int cur_character, cur_pos, cur_char_x, cur_char_y, error_count;
     logic [COLUMNS_TABLE-1:0] cur_data [0:HELLO_STR_SIZE-1]; // questionable

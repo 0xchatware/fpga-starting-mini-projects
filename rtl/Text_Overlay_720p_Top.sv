@@ -32,7 +32,7 @@ module Text_Overlay_720p_Top(
     localparam TOTAL_VER_PIXEL = 750;
     localparam TOTAL_HOR_PIXEL = 1650;
     localparam COLOUR_BITS = 8;
-    localparam RESET_TIMEOUT = 93750000; // for 50ns and a 25MHz clock
+    localparam RESET_TIMEOUT = 5; // for 200ns and a 25MHz clock
     localparam HELLO_WORLD_CHAR_NUM = 13;
     localparam TEXT_COLUMNS = HELLO_WORLD_CHAR_NUM;
     localparam NUM_CHAR = 256;

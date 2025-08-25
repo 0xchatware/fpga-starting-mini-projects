@@ -49,11 +49,11 @@ module Text_Overlay#(parameter HORIZONTAL_WIDTH=1650,
     localparam logic INITIAL_STATE = 1'b0;
     localparam logic CALCULATION_STATE = 1'b1;
     
-    logic [$clog2(NUM_CHAR)-1:0] r_i, r_i_synchronizer;
+    logic unsigned [$clog2(NUM_CHAR)-1:0] r_i, r_i_synchronizer;
     
     logic [$clog2(NUM_OF_POSSIBLE_CHAR)-1:0] r_character;
-    logic [$clog2(COLUMNS)-1:0] r_wr_x_pos;
-    logic [$clog2(ROWS)-1:0] r_wr_y_pos;
+    logic [($clog2(COLUMNS)-1 > 0 ? $clog2(COLUMNS)-1 : 0):0] r_wr_x_pos;
+    logic [($clog2(ROWS)-1 > 0 ? $clog2(ROWS)-1 : 0):0] r_wr_y_pos;
     logic r_wr_en;
     
     logic r_cur_state;
@@ -98,7 +98,7 @@ module Text_Overlay#(parameter HORIZONTAL_WIDTH=1650,
                 r_i <= r_i + 1;
                 
                 // r_i_synchronizer helps to add one cycle to r_i,
-                // if r_i == 13, the value will skip the calculations
+                // Without it, if r_i == 13, the value will skip the calculations
                 // for the last character.
                 r_i_synchronizer <= r_i;
                 r_wr_en <= r_i_synchronizer == NUM_CHAR-1 ? 0 : 1;
