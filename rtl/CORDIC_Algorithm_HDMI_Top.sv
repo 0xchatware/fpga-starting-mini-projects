@@ -46,7 +46,7 @@ module CORDIC_Algorithm_HDMI_Top(
     localparam byte INT_BITS = 3;
     localparam byte FRACTIONAL_BITS = 30;
     localparam shortint BITS = INT_BITS + FRACTIONAL_BITS;
-    localparam byte N_ITERATION = FRACTIONAL_BITS/2;
+    localparam byte N_ITERATION = 15;
     
     localparam logic [BITS-1:0] Z_VALUE = (BITS)'(int'(0.78 * 2**FRACTIONAL_BITS)); // takes 4 char
     localparam byte unsigned DISPLAY_FRAC_NUM = 4;
@@ -62,8 +62,8 @@ module CORDIC_Algorithm_HDMI_Top(
     localparam logic [INITIAL_CHAR_NUM*8-1:0] DISPLAY_TEXT = {"cos(", fixed_to_char(Z_VALUE), ") = "};
     
     // Modes for CORDIC
-    localparam logic signed [1:0] HYPERBOLIC = -1;
     localparam logic signed [1:0] LINEAR = 0;
+    localparam logic signed [1:0] HYPERBOLIC = -1;
     localparam logic signed [1:0] CIRCULAR = 1;
     
     logic w_clk_pxl, w_clk_pxl_5x;

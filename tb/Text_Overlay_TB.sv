@@ -62,11 +62,11 @@ module Text_Overlay_TB();
 //    localparam string hello_only_str = "Hello, hello!";
 //    logic [HELLO_STR_SIZE-1:0][7:0] str_2 = "Hello, hello!";
 
-    localparam string hello_str = "cos() = ";
-    logic [HELLO_STR_SIZE-1:0][7:0] str = "cos() = ";
+    localparam string hello_str = "Hello, world!";
+    logic [HELLO_STR_SIZE-1:0][7:0] str = "Hello, world!";
     
-    localparam string hello_only_str = "sin() = ";
-    logic [HELLO_STR_SIZE-1:0][7:0] str_2 = "sin() = ";
+    localparam string hello_only_str = "Hello, hello!";
+    logic [HELLO_STR_SIZE-1:0][7:0] str_2 = "Hello, hello!";
 
     int cur_character, cur_pos, cur_char_x, cur_char_y, error_count;
     logic [COLUMNS_TABLE-1:0] cur_data [0:HELLO_STR_SIZE-1]; // questionable

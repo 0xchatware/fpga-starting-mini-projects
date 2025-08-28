@@ -1,5 +1,6 @@
 `timescale 1ns / 1ps
 `default_nettype none
+`include "cordic_consts.svh"
 //////////////////////////////////////////////////////////////////////////////////
 // Company: 
 // Engineer: 
@@ -45,33 +46,14 @@ module CORDIC_Algorithm #(parameter N_ITERATION=12, // best practice, number of 
         output wire o_rot_en
     );
     
-    localparam HYPERBOLIC = -1;
-    localparam LINEAR = 0;
-    localparam CIRCULAR = 1;
+    localparam logic signed [1:0] HYPERBOLIC = -1;
+    localparam logic signed [1:0] LINEAR = 0;
+    localparam logic signed [1:0] CIRCULAR = 1;
     
     localparam TWO_FRACTIONAL = int_to_fixed(2);
     localparam ONE_FRACTIONAL = int_to_fixed(1);
     localparam K_CIRCULAR = (BITS)'(int'(0.6072529350088812561694 * 2**FRACTIONAL_BITS));
     localparam K_HYPERBOLIC = (BITS)'(int'(1.207497067763 * 2**FRACTIONAL_BITS));
-    
-    localparam TAN_FILE = "tan.mem";
-    localparam TANH_FILE = "tanh.mem";
-    localparam OFFSET_FILE = "cordic_offset.mem";
-    localparam OFFSET_BITS = 4;
-    
-    logic signed [BITS-1:0] r_tan_mem [0:N_ITERATION-1];
-    logic signed [BITS-1:0] r_tanh_mem [0:N_ITERATION-1];
-    logic [OFFSET_BITS-1:0] r_offset_mem [0:N_ITERATION-1];
-    initial begin
-        if (TAN_FILE != "")
-            $readmemh(TAN_FILE, r_tan_mem);
-        
-        if (TANH_FILE != "")
-            $readmemh(TANH_FILE, r_tanh_mem);
-            
-        if (OFFSET_FILE != "")
-            $readmemh(OFFSET_FILE, r_offset_mem);
-    end
     
     logic signed [BITS-1:0] r_x [0:N_ITERATION];
     logic signed [BITS-1:0] r_y [0:N_ITERATION];
@@ -133,9 +115,9 @@ module CORDIC_Algorithm #(parameter N_ITERATION=12, // best practice, number of 
                     end else begin                 
                         case(r_mode[i-1])
                             HYPERBOLIC: begin
-                                r_x[i] <= r_x[i-1] + (get_dir(r_rot_en[i-1], r_y[i-1], r_z[i-1], r_y[i-1]) >>> (i - r_offset_mem[i-1]));
-                                r_y[i] <= r_y[i-1] + (get_dir(r_rot_en[i-1], r_y[i-1], r_z[i-1], r_x[i-1]) >>> (i - r_offset_mem[i-1]));
-                                r_z[i] <= r_z[i-1] - get_dir(r_rot_en[i-1], r_y[i-1], r_z[i-1], r_tanh_mem[i-1-r_offset_mem[i-1]]);
+                                r_x[i] <= r_x[i-1] + (get_dir(r_rot_en[i-1], r_y[i-1], r_z[i-1], r_y[i-1]) >>> (i - CORDIC_OFFSET[i-1]));
+                                r_y[i] <= r_y[i-1] + (get_dir(r_rot_en[i-1], r_y[i-1], r_z[i-1], r_x[i-1]) >>> (i - CORDIC_OFFSET[i-1]));
+                                r_z[i] <= r_z[i-1] - get_dir(r_rot_en[i-1], r_y[i-1], r_z[i-1], CORDIC_ATANH[i-1-CORDIC_OFFSET[i-1]]);
                             end
                             LINEAR: begin
                                 r_x[i] <= r_x[i-1];
@@ -145,7 +127,7 @@ module CORDIC_Algorithm #(parameter N_ITERATION=12, // best practice, number of 
                             CIRCULAR: begin
                                 r_x[i] <= r_x[i-1] - (get_dir(r_rot_en[i-1], r_y[i-1], r_z[i-1], r_y[i-1]) >>> (i-1));
                                 r_y[i] <= r_y[i-1] + (get_dir(r_rot_en[i-1], r_y[i-1], r_z[i-1], r_x[i-1]) >>> (i-1));
-                                r_z[i] <= r_z[i-1] - get_dir(r_rot_en[i-1], r_y[i-1], r_z[i-1], r_tan_mem[i-1]);
+                                r_z[i] <= r_z[i-1] - get_dir(r_rot_en[i-1], r_y[i-1], r_z[i-1], CORDIC_ATAN[i-1]);
                             end 
                         endcase
                         

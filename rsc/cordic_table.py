@@ -1,26 +1,44 @@
 import sys
-from math import atan, atan, atanh, sqrt
+from math import atan, atan, atanh, sqrt, ceil
 
 def main(iterations, int_bits, fra_bits):
-    with open('tan.mem', 'w') as f:
+    bits = int_bits + fra_bits
+    with open('cordic_consts.svh', 'w') as f:
+        f.write(f"// Generated with \"cordic_table.py {iterations} {int_bits} {fra_bits}\"\n")
+        f.write("`ifndef CORDIC_CONSTS_VH\n`define CORDIC_CONSTS_VH\n\n")
+        f.write(f"localparam int CORDIC_ITER = {iterations};\n\n")
+        
+        # tan
+        f.write(f"localparam logic signed [{bits - 1}:0] CORDIC_ATAN [0:CORDIC_ITER-1] = {{\n")
+        
+        values = []
         j = 1
         for i in range(iterations):
             val = atan(2**(-i))
             fra = int((val - int(val)) * 2**fra_bits)
-            out =  (fra) & create_full_bin(int_bits + fra_bits)
-            f.write('0' + hex(out)[2:] + '\n')
+            out =  (fra) & create_full_bin(bits)
+            values.append(f"\t{bits}'h{out:0{ceil(bits/4)}x}")
             j+=1
-            
-    with open('tanh.mem', 'w') as f:
+        
+        f.write(',\n'.join(values))
+        f.write("\n};\n\n")
+        
+        # tanh
+        f.write(f"localparam logic signed [{bits - 1}:0] CORDIC_ATANH [0:CORDIC_ITER-1] = {{\n")
         j = 1
+        values.clear()
         for i in range(iterations):
             val = atanh(2**(-j))
             fra = int((val - int(val)) * 2**fra_bits)
-            out =  (fra) & create_full_bin(int_bits + fra_bits)
-            f.write('0' + hex(out)[2:] + '\n')
+            out =  (fra) & create_full_bin(bits)
+            values.append(f"\t{bits}'h{out:0{ceil(bits/4)}x}")
             j+=1
+        f.write(',\n'.join(values))
+        f.write("\n};\n\n")
             
-    with open('cordic_offset.mem', 'w') as f:
+        # offset
+        f.write(f"localparam int CORDIC_OFFSET [0:CORDIC_ITER-1] = {{\n")
+        values.clear()
         cur_offset = 0
         an = 1
         k = find_k(1)
@@ -32,9 +50,11 @@ def main(iterations, int_bits, fra_bits):
             else:
                 cur_offset += 1
                 k = find_k(k)
-            f.write('0' + hex(cur_offset)[2:] + '\n')
-            print(an)
-            
+            values.append(f"\t{cur_offset}")
+        f.write(',\n'.join(values))
+        f.write("\n};\n\n")
+        f.write("`endif")
+             
 def find_k(i): 
     return 3 * i + 1
             
@@ -45,7 +65,7 @@ def create_full_bin(num):
     return val 
                 
 if __name__ == "__main__":
-    if len(sys.argv) >= 3 and int(sys.argv[1]) >= 0 and int(sys.argv[2]) >= 0:
-        main(int(sys.argv[1]), 2, int(sys.argv[2]))
+    if len(sys.argv) >= 4 and int(sys.argv[1]) >= 0 and int(sys.argv[2]) >= 2 and int(sys.argv[3]) >= 0:
+        main(int(sys.argv[1]), int(sys.argv[2]), int(sys.argv[3]))
     else:
-        print("Usage: python cordic_table.py [iteration|int] [fra_bits|int]")
+        print("Usage: python cordic_table.py [iteration|int] [int_bits|int] [fra_bits|int]")

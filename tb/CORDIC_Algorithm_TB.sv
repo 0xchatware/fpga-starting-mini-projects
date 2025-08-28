@@ -28,7 +28,7 @@ module CORDIC_Algorithm_TB();
     localparam BITS = 33;
     localparam INT_BITS = 3;
     localparam FRAC_BITS = BITS-INT_BITS;
-    localparam N_ITERATION = FRAC_BITS;
+    localparam N_ITERATION = 15;
     
     localparam HYPERBOLIC = -1;
     localparam LINEAR = 0;
@@ -135,7 +135,7 @@ module CORDIC_Algorithm_TB();
                         
                         expected[1] = $sqrt(vec_x[i]**2 - vec_y[i]**2);
                         result[1] = to_real(o_x) / K_HYPERBOLIC;
-                        operation[1] = "Sqrt(x**2 - y**2) * K'";
+                        operation[1] = "Sqrt(x**2 - y**2) * K";
                     end
                 end
                 CIRCULAR: begin
