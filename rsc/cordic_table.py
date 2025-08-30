@@ -37,20 +37,19 @@ def main(iterations, int_bits, fra_bits):
         f.write("\n};\n\n")
             
         # offset
-        f.write(f"localparam int CORDIC_OFFSET [0:CORDIC_ITER-1] = {{\n")
+        f.write(f"localparam logic [3:0] CORDIC_OFFSET [0:CORDIC_ITER-1] = {{\n")
         values.clear()
-        cur_offset = 0
         an = 1
         k = find_k(1)
         prev_i = 1
-        for i in range(iterations):
+        values.append(f"\t{1}")
+        for i in range(iterations-1):
             an *= sqrt(1 - 2**(-2 * prev_i))
             if prev_i < k:
-                prev_i = i + 1
+                prev_i = prev_i + 1
             else:
-                cur_offset += 1
                 k = find_k(k)
-            values.append(f"\t{cur_offset}")
+            values.append(f"\t{prev_i}")
         f.write(',\n'.join(values))
         f.write("\n};\n\n")
         f.write("`endif")

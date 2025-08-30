@@ -40,22 +40,22 @@ localparam logic signed [32:0] CORDIC_ATANH [0:CORDIC_ITER-1] = {
 	33'h000008000
 };
 
-localparam int CORDIC_OFFSET [0:CORDIC_ITER-1] = {
-	0,
-	0,
-	0,
-	0,
-	1,
-	1,
-	1,
-	1,
-	1,
-	1,
-	1,
-	1,
+localparam logic [3:0] CORDIC_OFFSET [0:CORDIC_ITER-1] = {
 	1,
 	2,
-	2
+	3,
+	4,
+	4,
+	5,
+	6,
+	7,
+	8,
+	9,
+	10,
+	11,
+	12,
+	13,
+	13
 };
 
 `endif

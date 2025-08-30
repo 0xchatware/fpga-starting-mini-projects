@@ -50,10 +50,10 @@ module CORDIC_Algorithm #(parameter N_ITERATION=12, // best practice, number of 
     localparam logic signed [1:0] LINEAR = 0;
     localparam logic signed [1:0] CIRCULAR = 1;
     
-    localparam TWO_FRACTIONAL = int_to_fixed(2);
-    localparam ONE_FRACTIONAL = int_to_fixed(1);
-    localparam K_CIRCULAR = (BITS)'(int'(0.6072529350088812561694 * 2**FRACTIONAL_BITS));
-    localparam K_HYPERBOLIC = (BITS)'(int'(1.207497067763 * 2**FRACTIONAL_BITS));
+    localparam logic signed [BITS-1:0] TWO_FRACTIONAL = int_to_fixed(2);
+    localparam logic signed [BITS-1:0] ONE_FRACTIONAL = int_to_fixed(1);
+    localparam logic signed [BITS-1:0] K_CIRCULAR = (BITS)'(int'(0.6072529350088812561694 * 2**FRACTIONAL_BITS));
+    localparam logic signed [BITS-1:0] K_HYPERBOLIC = (BITS)'(int'(1.207497067763 * 2**FRACTIONAL_BITS));
     
     logic signed [BITS-1:0] r_x [0:N_ITERATION];
     logic signed [BITS-1:0] r_y [0:N_ITERATION];
@@ -61,6 +61,15 @@ module CORDIC_Algorithm #(parameter N_ITERATION=12, // best practice, number of 
     logic signed [1:0] r_mode [0:N_ITERATION];
     logic r_rot_en [0:N_ITERATION];
     logic r_valid [0:N_ITERATION];
+    logic r_dir [1:N_ITERATION];
+    
+    generate
+        for (genvar i=1; i<=N_ITERATION; i++) begin
+            always_comb begin
+                r_dir[i] = r_rot_en[i-1] ? r_z[i-1][BITS-1] : !r_y[i-1][BITS-1];
+            end
+        end
+    endgenerate
     
     generate
         for (genvar i=0; i<=N_ITERATION; i++) begin // i == 0 : INITIAL VALUE
@@ -115,22 +124,38 @@ module CORDIC_Algorithm #(parameter N_ITERATION=12, // best practice, number of 
                     end else begin                 
                         case(r_mode[i-1])
                             HYPERBOLIC: begin
-                                r_x[i] <= r_x[i-1] + (get_dir(r_rot_en[i-1], r_y[i-1], r_z[i-1], r_y[i-1]) >>> (i - CORDIC_OFFSET[i-1]));
-                                r_y[i] <= r_y[i-1] + (get_dir(r_rot_en[i-1], r_y[i-1], r_z[i-1], r_x[i-1]) >>> (i - CORDIC_OFFSET[i-1]));
-                                r_z[i] <= r_z[i-1] - get_dir(r_rot_en[i-1], r_y[i-1], r_z[i-1], CORDIC_ATANH[i-1-CORDIC_OFFSET[i-1]]);
+                                if (r_dir[i]) begin
+                                    r_x[i] <= r_x[i-1] - (r_y[i-1] >>> CORDIC_OFFSET[i-1]);
+                                    r_y[i] <= r_y[i-1] - (r_x[i-1] >>> CORDIC_OFFSET[i-1]);
+                                    r_z[i] <= r_z[i-1] + CORDIC_ATANH[CORDIC_OFFSET[i-1]-1];
+                                end else begin
+                                    r_x[i] <= r_x[i-1] + (r_y[i-1] >>> CORDIC_OFFSET[i-1]);
+                                    r_y[i] <= r_y[i-1] + (r_x[i-1] >>> CORDIC_OFFSET[i-1]);
+                                    r_z[i] <= r_z[i-1] - CORDIC_ATANH[CORDIC_OFFSET[i-1]-1];
+                                end
                             end
                             LINEAR: begin
                                 r_x[i] <= r_x[i-1];
-                                r_y[i] <= r_y[i-1] + (get_dir(r_rot_en[i-1], r_y[i-1], r_z[i-1], r_x[i-1]) >>> (i-1));
-                                r_z[i] <= r_z[i-1] - (get_dir(r_rot_en[i-1], r_y[i-1], r_z[i-1], ONE_FRACTIONAL) >>> (i-1));
+                                if (r_dir[i]) begin
+                                    r_y[i] <= r_y[i-1] - (r_x[i-1] >>> (i-1));
+                                    r_z[i] <= r_z[i-1] + (ONE_FRACTIONAL >> (i-1));
+                                end else begin
+                                    r_y[i] <= r_y[i-1] + (r_x[i-1] >>> (i-1));
+                                    r_z[i] <= r_z[i-1] - (ONE_FRACTIONAL >> (i-1));
+                                end
                             end
-                            CIRCULAR: begin
-                                r_x[i] <= r_x[i-1] - (get_dir(r_rot_en[i-1], r_y[i-1], r_z[i-1], r_y[i-1]) >>> (i-1));
-                                r_y[i] <= r_y[i-1] + (get_dir(r_rot_en[i-1], r_y[i-1], r_z[i-1], r_x[i-1]) >>> (i-1));
-                                r_z[i] <= r_z[i-1] - get_dir(r_rot_en[i-1], r_y[i-1], r_z[i-1], CORDIC_ATAN[i-1]);
+                            CIRCULAR: begin                                
+                                if (r_dir[i]) begin
+                                    r_x[i] <= r_x[i-1] + (r_y[i-1] >>> (i-1));
+                                    r_y[i] <= r_y[i-1] - (r_x[i-1] >>> (i-1));
+                                    r_z[i] <= r_z[i-1] + CORDIC_ATAN[i-1];
+                                end else begin
+                                    r_x[i] <= r_x[i-1] - (r_y[i-1] >>> (i-1));
+                                    r_y[i] <= r_y[i-1] + (r_x[i-1] >>> (i-1));
+                                    r_z[i] <= r_z[i-1] - CORDIC_ATAN[i-1];
+                                end
                             end 
                         endcase
-                        
                         r_mode[i] <= r_mode[i-1];
                         r_rot_en[i] <= r_rot_en[i-1];
                         r_valid[i] <= r_valid[i-1];
@@ -146,15 +171,6 @@ module CORDIC_Algorithm #(parameter N_ITERATION=12, // best practice, number of 
     assign o_valid = r_valid[N_ITERATION];
     assign o_mode = r_mode[N_ITERATION];
     assign o_rot_en = r_rot_en[N_ITERATION];
-    
-    function logic signed [BITS-1:0] get_dir(input logic is_rot_en, // rot_en is not the same for all z, x for hyperbolic
-                           input logic signed [BITS-1:0] y,
-                           input logic signed [BITS-1:0] z,
-                           input logic signed [BITS-1:0] value);
-        if (is_rot_en)
-            return z < 0 ? -value : value;
-        return y < 0 ? value : -value;
-    endfunction
     
     function logic signed [BITS-1:0] int_to_fixed(input logic [INTEGER_BITS-1:0] val);
         return (BITS)'(val <<< FRACTIONAL_BITS);
