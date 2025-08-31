@@ -33,7 +33,7 @@ module CORDIC_Algorithm #(parameter N_ITERATION=12, // best practice, number of 
         input wire i_clk,
         input wire i_rst,
         input wire i_ready,
-        input wire signed [BITS-1:0] i_x,
+        input wire signed [BITS-1:0] i_x, // input should be valid for two clocks
         input wire signed [BITS-1:0] i_y,
         input wire signed [BITS-1:0] i_z,
         input wire signed [1:0] i_mode,
@@ -46,14 +46,17 @@ module CORDIC_Algorithm #(parameter N_ITERATION=12, // best practice, number of 
         output wire o_rot_en
     );
     
-    localparam logic signed [1:0] HYPERBOLIC = -1;
-    localparam logic signed [1:0] LINEAR = 0;
-    localparam logic signed [1:0] CIRCULAR = 1;
+    typedef enum logic signed [1:0] {LINEAR=0, HYPERBOLIC=-1, CIRCULAR=1} e_cordic_mode;
     
-    localparam logic signed [BITS-1:0] TWO_FRACTIONAL = int_to_fixed(2);
-    localparam logic signed [BITS-1:0] ONE_FRACTIONAL = int_to_fixed(1);
-    localparam logic signed [BITS-1:0] K_CIRCULAR = (BITS)'(int'(0.6072529350088812561694 * 2**FRACTIONAL_BITS));
-    localparam logic signed [BITS-1:0] K_HYPERBOLIC = (BITS)'(int'(1.207497067763 * 2**FRACTIONAL_BITS));
+    typedef enum logic signed [BITS-1:0] {
+        TWO_FRACTIONAL = int_to_fixed(2),
+        ONE_FRACTIONAL = int_to_fixed(1),
+        K_CIRCULAR = (BITS)'(int'(0.6072529350088812561694 * 2**FRACTIONAL_BITS)),
+        K_HYPERBOLIC = (BITS)'(int'(1.207497067763 * 2**FRACTIONAL_BITS))
+    } e_fixed_num;
+    
+    logic r_dir [1:N_ITERATION];
+    logic r_dir_valid [1:N_ITERATION];
     
     logic signed [BITS-1:0] r_x [0:N_ITERATION];
     logic signed [BITS-1:0] r_y [0:N_ITERATION];
@@ -61,7 +64,6 @@ module CORDIC_Algorithm #(parameter N_ITERATION=12, // best practice, number of 
     logic signed [1:0] r_mode [0:N_ITERATION];
     logic r_rot_en [0:N_ITERATION];
     logic r_valid [0:N_ITERATION];
-    logic r_dir [1:N_ITERATION];
     
     generate
         for (genvar i=1; i<=N_ITERATION; i++) begin
@@ -73,7 +75,7 @@ module CORDIC_Algorithm #(parameter N_ITERATION=12, // best practice, number of 
     
     generate
         for (genvar i=0; i<=N_ITERATION; i++) begin // i == 0 : INITIAL VALUE
-            always@(posedge i_clk) begin
+            always@(posedge i_clk) begin : cordic_calculations
                 if (i_rst) begin
                     r_x[i] <= 0;
                     r_y[i] <= 0;
@@ -121,7 +123,7 @@ module CORDIC_Algorithm #(parameter N_ITERATION=12, // best practice, number of 
                                 end
                             end
                         endcase
-                    end else begin                 
+                    end else begin       
                         case(r_mode[i-1])
                             HYPERBOLIC: begin
                                 if (r_dir[i]) begin

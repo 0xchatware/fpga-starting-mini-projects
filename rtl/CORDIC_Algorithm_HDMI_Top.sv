@@ -51,6 +51,7 @@ module CORDIC_Algorithm_HDMI_Top(
     localparam logic [BITS-1:0] Z_VALUE = (BITS)'(int'(0.78 * 2**FRACTIONAL_BITS)); // takes 4 char
     localparam byte unsigned DISPLAY_FRAC_NUM = 4;
     localparam byte unsigned DISPLAY_INT_NUM = 2;
+    
     // DISPLAY_INT_NUM + "." + DISPLAYED_FRAC_NUM
     // (DISPLAY_INT_NUM + 1 + DISPLAYED_FRAC_NUM) - 1
     localparam shortint unsigned DISPLAY_FIXED = DISPLAY_FRAC_NUM + DISPLAY_INT_NUM + 1;
@@ -59,12 +60,13 @@ module CORDIC_Algorithm_HDMI_Top(
     localparam shortint unsigned INITIAL_CHAR_NUM = 8 + DISPLAY_FIXED;
     localparam shortint unsigned CHAR_NUM = INITIAL_CHAR_NUM + DISPLAY_FIXED;
     localparam shortint unsigned TEXT_COLUMNS = CHAR_NUM;
-    localparam logic [INITIAL_CHAR_NUM*8-1:0] DISPLAY_TEXT = {"cos(", fixed_to_char(Z_VALUE), ") = "};
+    
+    typedef logic unsigned [DISPLAY_FIXED-1:0][7:0] fixed_point_string_buffer_t;
+    typedef logic unsigned [CHAR_NUM-1:0][7:0] string_t;
+    localparam string_t DISPLAY_TEXT = {"cos(", fixed_to_char(Z_VALUE), ") = "};
     
     // Modes for CORDIC
-    localparam logic signed [1:0] LINEAR = 0;
-    localparam logic signed [1:0] HYPERBOLIC = -1;
-    localparam logic signed [1:0] CIRCULAR = 1;
+    typedef enum logic signed [1:0] {LINEAR=0, HYPERBOLIC=-1, CIRCULAR=1} e_cordic_mode;
     
     logic w_clk_pxl, w_clk_pxl_5x;
     logic w_clk_locked;
@@ -120,16 +122,16 @@ module CORDIC_Algorithm_HDMI_Top(
     logic w_cordic_ready, w_cordic_valid, w_cordic_rot_en_in, w_cordic_rot_en_out;
     logic [BITS-1:0] w_cordic_x_in, w_cordic_y_in, w_cordic_z_in, w_cordic_x_out, w_cordic_y_out, w_cordic_z_out;
     logic [1:0] w_cordic_mode_in, w_cordic_mode_out;
-    logic [$clog2(RESET_TIMEOUT_5x)-1:0] w_cordic_ready_count;
+    logic [$clog2(RESET_TIMEOUT)-1:0] w_cordic_ready_count;
     logic w_cordic_ready_clear;
     
-    always_ff@(posedge w_clk_pxl_5x) begin : cordic_ready
-        w_cordic_ready_clear <= w_master_reset_5x;
-        w_cordic_ready <= w_cordic_ready_count != RESET_TIMEOUT_5x;
+    always_ff@(posedge w_clk_pxl) begin : cordic_ready
+        w_cordic_ready_clear <= w_master_reset;
+        w_cordic_ready <= w_cordic_ready_count != RESET_TIMEOUT*2;
         
         if (w_cordic_ready_clear)
           w_cordic_ready_count <= 0;
-        else if (w_cordic_ready_count != RESET_TIMEOUT_5x)
+        else if (w_cordic_ready_count != RESET_TIMEOUT*2)
           w_cordic_ready_count <= w_cordic_ready_count + 1;
     end
     
@@ -137,8 +139,8 @@ module CORDIC_Algorithm_HDMI_Top(
                        .INTEGER_BITS(INT_BITS), // Q3.30 sign included
                        .FRACTIONAL_BITS(FRACTIONAL_BITS)) 
                        CORDIC_Algorithm_Inst (
-        .i_clk(w_clk_pxl_5x),
-        .i_rst(w_master_reset_5x),
+        .i_clk(w_clk_pxl),
+        .i_rst(w_master_reset),
         .i_ready(w_cordic_ready),
         .i_x(w_cordic_x_in),
         .i_y(w_cordic_y_in),
@@ -190,7 +192,7 @@ module CORDIC_Algorithm_HDMI_Top(
     logic r_text_en, r_text_data, r_text_rd_dv, r_text_write_completed;
     logic [$clog2(TOTAL_HOR_PIXEL)-1:0] r_text_box_x;
     logic [$clog2(TOTAL_VER_PIXEL)-1:0] r_text_box_y;
-    logic [CHAR_NUM-1:0][7:0] r_characters;
+    string_t r_characters;
     logic r_text_wr_ready, r_text_wr_ready_clear;
     logic [$clog2(RESET_TIMEOUT)-1:0] r_text_ready_count;
     
@@ -206,7 +208,7 @@ module CORDIC_Algorithm_HDMI_Top(
     
     always_ff@(posedge w_clk_pxl) begin : update_string
         if (w_cordic_valid) begin
-            r_characters[CHAR_NUM-DISPLAY_FIXED:0] <= {DISPLAY_TEXT, fixed_to_char(w_cordic_x_out)};
+            r_characters[DISPLAY_FIXED-1:0] <= {fixed_to_char(w_cordic_x_out)};
         end
     end
     
@@ -238,7 +240,7 @@ module CORDIC_Algorithm_HDMI_Top(
         r_text_box_y = 0;
         r_text_en = 1;
         r_text_ready_count = 0;
-        r_characters = {>>{DISPLAY_TEXT}}; // unpacked to packed
+        r_characters[CHAR_NUM-1 -: INITIAL_CHAR_NUM] = {>>{DISPLAY_TEXT}};
     end
         
     logic [COLOUR_BITS-1:0] v_paint_r, v_paint_g, v_paint_b;
@@ -304,27 +306,27 @@ module CORDIC_Algorithm_HDMI_Top(
     OBUFDS OBUFDS_clock(.I(w_clk_pxl), .O(o_hdmi_clk_p), .OB(o_hdmi_clk_n));
     
     
-    function logic unsigned [DISPLAY_FIXED*8-1:0] fixed_to_char(input logic signed [BITS-1:0] value);
+    function fixed_point_string_buffer_t fixed_to_char(input logic signed [BITS-1:0] value);
         static logic signed [BITS-1:0] abs_value = (value < 0) ? -value : value;
         static logic unsigned [INT_BITS-1:0] int_part = (INT_BITS-1)'(abs_value >>> FRACTIONAL_BITS);
         static logic unsigned [FRACTIONAL_BITS-1:0] frac_part = (FRACTIONAL_BITS)'(abs_value);
         static logic unsigned [63:0] frac_raw;
         
         // Sign
-        fixed_to_char[DISPLAY_FIXED*8-1 -: 8] = value[BITS-1] == 1 ? "-" : "+";
+        fixed_to_char[DISPLAY_FIXED-1] = value[BITS-1] == 1 ? "-" : "+";
         
         // Integer Part (without sign)
         for (byte i = 0; i < DISPLAY_INT_NUM; i++) begin
-            fixed_to_char[(DISPLAY_FRAC_NUM+i)*8 +: 8] = "0" + int_part/($unsigned(10**i))%10;
+            fixed_to_char[DISPLAY_FRAC_NUM+i] = "0" + int_part/($unsigned(10**i))%10;
         end
         
         // Dot
-        fixed_to_char[(DISPLAY_FIXED-DISPLAY_INT_NUM)*8-1 -: 8] = ".";
+        fixed_to_char[DISPLAY_FRAC_NUM] = ".";
         
         // Fractional part
         for (byte i = 0; i < DISPLAY_FRAC_NUM; i++) begin
             frac_raw = (((frac_part * $unsigned(10**(i+1))) >> FRACTIONAL_BITS) % 10);
-            fixed_to_char[(DISPLAY_FIXED-DISPLAY_INT_NUM-1-i)*8-1 -: 8] =  "0" + frac_raw;
+            fixed_to_char[DISPLAY_FIXED-DISPLAY_INT_NUM-2-i] = "0" + frac_raw;
         end
         return fixed_to_char;
     endfunction
