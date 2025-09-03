@@ -65,9 +65,9 @@ module CORDIC_Algorithm_TB();
     );
     
     localparam TESTS = 8;
-    real vec_x [0:TESTS-1]     = {0.25,   -0.45,  0.87,   NONE,       0.60,       NONE,     0.80,     0.50 + 0.25};
+    real vec_x [0:TESTS-1]     = {1.25,   -1.45,  0.87,   NONE,       0.60,       NONE,     0.80,     0.50 + 0.25};
     real vec_y [0:TESTS-1]     = {NONE,   NONE,   0.12,   NONE,       0.40,       NONE,     1.00,     0.50 - 0.25};
-    real vec_z [0:TESTS-1]     = {0.15,   0.23,   NONE,   1.00,       NONE,       0.0909,   NONE,     NONE};
+    real vec_z [0:TESTS-1]     = {1.15,   1.23,   NONE,   1.00,       NONE,       0.0909,   NONE,     NONE};
     int vec_mode [0:TESTS-1]   = {LINEAR, LINEAR, LINEAR, HYPERBOLIC, HYPERBOLIC, CIRCULAR, CIRCULAR, HYPERBOLIC};
     bit vec_rot_en [0:TESTS-1] = {1,      1,      0,      1,          0,          1,        0,        0};
     

@@ -48,25 +48,71 @@ module CORDIC_Algorithm_HDMI_Top(
     localparam shortint BITS = INT_BITS + FRACTIONAL_BITS;
     localparam byte N_ITERATION = 15;
     
-    localparam logic [BITS-1:0] Z_VALUE = (BITS)'(int'(0.78 * 2**FRACTIONAL_BITS)); // takes 4 char
-    localparam byte unsigned DISPLAY_FRAC_NUM = 4;
-    localparam byte unsigned DISPLAY_INT_NUM = 2;
+    // CORDIC
+    typedef enum logic signed [1:0] {LINEAR=0, HYPERBOLIC=-1, CIRCULAR=1} e_cordic_mode;
+    
+    typedef enum logic signed [BITS-1:0] {
+        X_VALUE      = (BITS)'(int'(1.1200000000000 * 2**FRACTIONAL_BITS)),
+        Y_VALUE      = (BITS)'(int'(0.9800000000000 * 2**FRACTIONAL_BITS)),
+        Z_VALUE      = (BITS)'(int'(0.7800000000000 * 2**FRACTIONAL_BITS)),
+        K_CIRCULAR   = (BITS)'(int'(1.6467602581210 * 2**FRACTIONAL_BITS)),
+        K_HYPERBOLIC = (BITS)'(int'(0.8281593609602 * 2**FRACTIONAL_BITS))
+    } e_cordic_value;
+    
+    localparam shortint unsigned NUM_OF_MODES = 6;
+    localparam shortint unsigned NUM_OF_OP = 10;
     
     // DISPLAY_INT_NUM + "." + DISPLAYED_FRAC_NUM
     // (DISPLAY_INT_NUM + 1 + DISPLAYED_FRAC_NUM) - 1
+    localparam byte unsigned DISPLAY_FRAC_NUM = 4;
+    localparam byte unsigned DISPLAY_INT_NUM = 2;
     localparam shortint unsigned DISPLAY_FIXED = DISPLAY_FRAC_NUM + DISPLAY_INT_NUM + 1;
-    
-    // "cos(%f) = %f"
-    localparam shortint unsigned INITIAL_CHAR_NUM = 8 + DISPLAY_FIXED;
+    localparam shortint unsigned INITIAL_CHAR_NUM = 14 + DISPLAY_FIXED*3; // takes biggest string in TODO
     localparam shortint unsigned CHAR_NUM = INITIAL_CHAR_NUM + DISPLAY_FIXED;
     localparam shortint unsigned TEXT_COLUMNS = CHAR_NUM;
     
     typedef logic unsigned [DISPLAY_FIXED-1:0][7:0] fixed_point_string_buffer_t;
     typedef logic unsigned [CHAR_NUM-1:0][7:0] string_t;
-    localparam string_t DISPLAY_TEXT = {"cos(", fixed_to_char(Z_VALUE), ") = "};
+
+    typedef enum logic [$clog2(NUM_OF_OP)-1:0] {
+        MULTIPLICATION,
+        DIVISION,
+        COS,
+        SIN,
+        COSH,
+        SINH,
+        ATAN,
+        ATANH,
+        SQUARED_ADDITION,
+        SQUARED_SUBSTRACTION
+    } e_cordic_operation;
     
-    // Modes for CORDIC
-    typedef enum logic signed [1:0] {LINEAR=0, HYPERBOLIC=-1, CIRCULAR=1} e_cordic_mode;
+//    %f * %f           = %f / 6 + 7*2 = 20 -> 15 empty space
+//    %f / %f           = %f /  6 + 7*2 = 20 -> 15
+//    cos(%f)           = %f /  8 + 7 = 15   -> 20
+//    sin(%f)           = %f /  8 + 7 = 15   -> 20
+//    cosh(%f)          = %f /  9 + 7 = 16   -> 19
+//    sinh(%f)          = %f /  9 + 7 = 16   -> 19
+//    atan(%f)          = %f /  9 + 7 = 16   -> 19
+//    atanh(%f)         = %f /  10 + 7 = 17  -> 18
+//    √(%f² + %f²) * %f = %f /  14 + 7*3 = 35
+//    √(%f² - %f²) * %f = %f /  14 + 7*3 = 35
+    logic [INITIAL_CHAR_NUM-1:0] initial_text [0:NUM_OF_OP-1] = '{
+        {fixed_to_char(X_VALUE), " * ", fixed_to_char(Z_VALUE), {15{" "}}, " = "},
+        {fixed_to_char(Y_VALUE), " / ", fixed_to_char(X_VALUE), {15{" "}}, " = "},
+        {"cos(", fixed_to_char(Z_VALUE), ")", {20{" "}}, " = "},
+        {"sin(", fixed_to_char(Z_VALUE), ")", {20{" "}}, " = "},
+        {"cosh(", fixed_to_char(Z_VALUE), ")", {19{" "}}, " = "},
+        {"sinh(", fixed_to_char(Z_VALUE), ")", {19{" "}}, " = "},
+        {"atan(", fixed_to_char(Z_VALUE), ")", {19{" "}}, " = "},
+        {"atanh(", fixed_to_char(Z_VALUE), ")", {18{" "}}, " = "},
+        {"√(", fixed_to_char(X_VALUE), "² + ", 
+                           fixed_to_char(Y_VALUE), "²) * ", fixed_to_char(K_CIRCULAR), " = "},
+        {"√(", fixed_to_char(X_VALUE), "² - ", 
+                               fixed_to_char(Y_VALUE), "²) * ", fixed_to_char(K_HYPERBOLIC), " = "}
+    };
+    
+    localparam string_t DISPLAY_TEXT = {"cos(", fixed_to_char(Z_VALUE), ") = "};
     
     logic w_clk_pxl, w_clk_pxl_5x;
     logic w_clk_locked;
@@ -119,51 +165,7 @@ module CORDIC_Algorithm_HDMI_Top(
         w_master_reset_5x = 1;
     end
     
-    logic w_cordic_ready, w_cordic_valid, w_cordic_rot_en_in, w_cordic_rot_en_out;
-    logic [BITS-1:0] w_cordic_x_in, w_cordic_y_in, w_cordic_z_in, w_cordic_x_out, w_cordic_y_out, w_cordic_z_out;
-    logic [1:0] w_cordic_mode_in, w_cordic_mode_out;
-    logic [$clog2(RESET_TIMEOUT)-1:0] w_cordic_ready_count;
-    logic w_cordic_ready_clear;
-    
-    always_ff@(posedge w_clk_pxl) begin : cordic_ready
-        w_cordic_ready_clear <= w_master_reset;
-        w_cordic_ready <= w_cordic_ready_count != RESET_TIMEOUT*2;
-        
-        if (w_cordic_ready_clear)
-          w_cordic_ready_count <= 0;
-        else if (w_cordic_ready_count != RESET_TIMEOUT*2)
-          w_cordic_ready_count <= w_cordic_ready_count + 1;
-    end
-    
-    CORDIC_Algorithm #(.N_ITERATION(N_ITERATION),
-                       .INTEGER_BITS(INT_BITS), // Q3.30 sign included
-                       .FRACTIONAL_BITS(FRACTIONAL_BITS)) 
-                       CORDIC_Algorithm_Inst (
-        .i_clk(w_clk_pxl),
-        .i_rst(w_master_reset),
-        .i_ready(w_cordic_ready),
-        .i_x(w_cordic_x_in),
-        .i_y(w_cordic_y_in),
-        .i_z(w_cordic_z_in), //theta
-        .i_mode(w_cordic_mode_in),
-        .i_rot_en(w_cordic_rot_en_in), // if not i_rot_en, vectoring mode
-        .o_valid(w_cordic_valid),
-        .o_x(w_cordic_x_out),
-        .o_y(w_cordic_y_out),
-        .o_z(w_cordic_z_out),
-        .o_mode(w_cordic_mode_out),
-        .o_rot_en(w_cordic_rot_en_out)
-    );
-    
-    initial begin : set_intial_cordic_values
-        w_cordic_ready = 1;
-        w_cordic_mode_in = CIRCULAR;
-        w_cordic_rot_en_in = 1;
-        w_cordic_x_in = 0;
-        w_cordic_y_in = 0;
-        w_cordic_z_in = Z_VALUE;
-    end
-    
+    // Video Signal
     logic [$clog2(TOTAL_HOR_PIXEL)-1:0] w_sx;
     logic [$clog2(TOTAL_VER_PIXEL)-1:0] w_sy;
     logic w_hsync, w_vsync;
@@ -188,11 +190,111 @@ module CORDIC_Algorithm_HDMI_Top(
         .o_de(w_de),
         .o_nf(),
         .o_fc());
+        
+    // CORDIC part
+    logic w_cordic_start, w_cordic_valid, w_cordic_rot_en_in, w_cordic_rot_en_out, w_cordic_ready;
+    logic [BITS-1:0] w_cordic_x_in, w_cordic_y_in, w_cordic_z_in, w_cordic_x_out, w_cordic_y_out, w_cordic_z_out;
+    logic [1:0] w_cordic_mode_in, w_cordic_mode_out;
+    logic [$clog2(RESET_TIMEOUT)-1:0] w_cordic_start_count;
+    logic w_cordic_start_clear, w_cordic_ready_clear;
+    logic [$clog2(NUM_OF_MODES)-1:0] w_cordic_cycle_count;
+    logic unsigned [BITS-1:0] w_cordic_results [0:9];
     
+    always_ff@(posedge w_clk_pxl) begin : cordic_start
+        w_cordic_start_clear <= w_master_reset;
+        w_cordic_start <= w_cordic_start_count == RESET_TIMEOUT;
+        
+        if (w_cordic_start_clear)
+          w_cordic_start_count <= 0;
+        else if (w_cordic_start_count != RESET_TIMEOUT)
+          w_cordic_start_count <= w_cordic_start_count + 1;
+    end
+    
+    always_ff@(posedge w_clk_pxl) begin : cordic_ready_time
+        w_cordic_ready_clear <= !w_cordic_start;
+        w_cordic_ready <= w_cordic_cycle_count != NUM_OF_MODES;
+        
+        if (w_cordic_ready_clear)
+          w_cordic_cycle_count <= 0;
+        else if (w_cordic_cycle_count != NUM_OF_MODES)
+          w_cordic_cycle_count <= w_cordic_cycle_count + 1;
+    end
+    
+    always_ff@(posedge w_clk_pxl) begin : cordic_set_modes
+        if (w_cordic_ready) begin
+            if (w_cordic_cycle_count % 2 == 0)
+                w_cordic_mode_in <= w_cordic_mode_in + 1;
+            w_cordic_rot_en_in <= w_cordic_rot_en_in + 1;
+        end
+    end
+    
+    CORDIC_Algorithm #(.N_ITERATION(N_ITERATION),
+                       .INTEGER_BITS(INT_BITS), // Q3.30 sign included
+                       .FRACTIONAL_BITS(FRACTIONAL_BITS)) 
+                       CORDIC_Algorithm_Inst (
+        .i_clk(w_clk_pxl),
+        .i_rst(w_master_reset),
+        .i_ready(w_cordic_ready),
+        .i_x(w_cordic_x_in),
+        .i_y(w_cordic_y_in),
+        .i_z(w_cordic_z_in), //theta
+        .i_mode(w_cordic_mode_in),
+        .i_rot_en(w_cordic_rot_en_in), // if not i_rot_en, vectoring mode
+        .o_valid(w_cordic_valid),
+        .o_x(w_cordic_x_out),
+        .o_y(w_cordic_y_out),
+        .o_z(w_cordic_z_out),
+        .o_mode(w_cordic_mode_out),
+        .o_rot_en(w_cordic_rot_en_out)
+    );
+    
+    initial begin
+        w_cordic_start = 1;
+        w_cordic_ready = 0;
+        w_cordic_mode_in = HYPERBOLIC;
+        w_cordic_rot_en_in = 1;
+        w_cordic_x_in = X_VALUE;
+        w_cordic_y_in = Y_VALUE;
+        w_cordic_z_in = Z_VALUE;
+    end
+    
+    always_ff@(posedge w_clk_pxl) begin : save_cordic_values
+        if (w_cordic_valid) begin
+            case (w_cordic_mode_out)
+                HYPERBOLIC: begin
+                    if (w_cordic_rot_en_out) begin
+                        w_cordic_results[COSH] = w_cordic_x_out;
+                        w_cordic_results[SINH] = w_cordic_y_out;
+                    end else begin
+                        w_cordic_results[ATANH] = w_cordic_z_out;
+                        w_cordic_results[SQUARED_SUBSTRACTION] = w_cordic_x_out;
+                    end
+                end
+                LINEAR: begin
+                    if (w_cordic_rot_en_out) begin
+                        w_cordic_results[MULTIPLICATION] = w_cordic_y_out;
+                    end else begin
+                        w_cordic_results[DIVISION] = w_cordic_z_out;
+                    end   
+                end 
+                CIRCULAR: begin
+                    if (w_cordic_rot_en_out) begin
+                        w_cordic_results[COS] = w_cordic_x_out;
+                        w_cordic_results[SIN] = w_cordic_y_out;
+                    end else begin
+                        w_cordic_results[ATAN] = w_cordic_z_out;
+                        w_cordic_results[SQUARED_ADDITION] = w_cordic_x_out;
+                    end   
+                end
+            endcase
+        end
+    end
+    
+    // Text Overlay
     logic r_text_en, r_text_data, r_text_rd_dv, r_text_write_completed;
     logic [$clog2(TOTAL_HOR_PIXEL)-1:0] r_text_box_x;
     logic [$clog2(TOTAL_VER_PIXEL)-1:0] r_text_box_y;
-    string_t r_characters;
+    string_t r_characters [0:10];
     logic r_text_wr_ready, r_text_wr_ready_clear;
     logic [$clog2(RESET_TIMEOUT)-1:0] r_text_ready_count;
     
@@ -207,15 +309,15 @@ module CORDIC_Algorithm_HDMI_Top(
     end
     
     always_ff@(posedge w_clk_pxl) begin : update_string
-        if (w_cordic_valid) begin
-            r_characters[DISPLAY_FIXED-1:0] <= {fixed_to_char(w_cordic_x_out)};
+        for (int i = 0; i < 10; i++) begin
+            r_characters[i][DISPLAY_FIXED-1:0] <= {fixed_to_char(w_cordic_results[i])};
         end
     end
     
     Text_Overlay#(.HORIZONTAL_WIDTH(TOTAL_HOR_PIXEL),
                   .VERTICAL_WIDTH(TOTAL_VER_PIXEL),
                   .COLUMNS(TEXT_COLUMNS),
-                  .NUM_CHAR(CHAR_NUM),
+                  .NUM_CHAR(CHAR_NUM * NUM_OF_OP),
                   .FONT_FILE(FONT_FILE),
                   .CHAR_PIXELS_X(8),
                   .CHAR_PIXELS_Y(16),
@@ -240,9 +342,12 @@ module CORDIC_Algorithm_HDMI_Top(
         r_text_box_y = 0;
         r_text_en = 1;
         r_text_ready_count = 0;
-        r_characters[CHAR_NUM-1 -: INITIAL_CHAR_NUM] = {>>{DISPLAY_TEXT}};
+        for (int i = 0; i < 10; i++) begin
+            r_characters[i][CHAR_NUM-1 -: INITIAL_CHAR_NUM] <= {>>{initial_text[i]}};
+        end
     end
         
+    // Display colors
     logic [COLOUR_BITS-1:0] v_paint_r, v_paint_g, v_paint_b;
     always_ff@(posedge w_clk_pxl) begin : set_display_values
         if (r_text_rd_dv && r_text_write_completed) begin

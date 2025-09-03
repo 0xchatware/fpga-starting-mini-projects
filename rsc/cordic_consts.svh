@@ -2,6 +2,8 @@
 `ifndef CORDIC_CONSTS_VH
 `define CORDIC_CONSTS_VH
 
+typedef enum logic signed [1:0] {LINEAR=0, HYPERBOLIC=-1, CIRCULAR=1} e_cordic_mode;
+
 localparam int CORDIC_ITER = 15;
 
 localparam logic signed [32:0] CORDIC_ATAN [0:CORDIC_ITER-1] = {

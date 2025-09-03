@@ -46,8 +46,6 @@ module CORDIC_Algorithm #(parameter N_ITERATION=12, // best practice, number of 
         output wire o_rot_en
     );
     
-    typedef enum logic signed [1:0] {LINEAR=0, HYPERBOLIC=-1, CIRCULAR=1} e_cordic_mode;
-    
     typedef enum logic signed [BITS-1:0] {
         TWO_FRACTIONAL = int_to_fixed(2),
         ONE_FRACTIONAL = int_to_fixed(1),

@@ -6,6 +6,7 @@ def main(iterations, int_bits, fra_bits):
     with open('cordic_consts.svh', 'w') as f:
         f.write(f"// Generated with \"cordic_table.py {iterations} {int_bits} {fra_bits}\"\n")
         f.write("`ifndef CORDIC_CONSTS_VH\n`define CORDIC_CONSTS_VH\n\n")
+        f.write("typedef enum logic signed [1:0] {LINEAR=0, HYPERBOLIC=-1, CIRCULAR=1} e_cordic_mode;\n\n")
         f.write(f"localparam int CORDIC_ITER = {iterations};\n\n")
         
         # tan
