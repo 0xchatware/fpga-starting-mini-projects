@@ -65,6 +65,13 @@ Displayed different patterns with the help of an HDMI module I made.
 
 Displaying a white square, but with a resolution of 720p.
 
+| SW1 | SW2 | OUTPUT              |
+|-----|-----|---------------------|
+| 0   | 0   | Pink Colour Pattern |
+| 0   | 1   | Cross Pattern       |
+| 1   | 0   | Ombre Pattern       |
+| 1   | 1   | Multicolour Pattern |
+
 ### Pong Game with HDMI at 720p
 
 A simple pong game against a boot. To reset the game toggle SW1 on the FPGA.
