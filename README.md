@@ -63,17 +63,25 @@ Displayed different patterns with the help of an HDMI module I made.
 
 ### Square Pattern with HDMI at 720p
 
-Same as [Patterns with HDMI at 480p](#patterns-with-hdmi-at-480p), but with a resolution of 720p.
+Displaying a white square, but with a resolution of 720p.
 
 ### Pong Game with HDMI at 720p
 
-A simple pong game with a bot
+A simple pong game against a boot. To reset the game toggle SW1 on the FPGA.
 
 ### Text Overlay with HDMI at 720p
 
+Displaying a character on the screen.
+
 ### Text Patterns with HDMI at 720p
 
+Displaying a character buffer on the screen.
+
 ### CORDIC Algorithm with HDMI at 720p
+
+Implemented all CORDIC operations with fixed values. 
+
+Not all operations are displayed on the screen yet.
 
 ## Resources
 
