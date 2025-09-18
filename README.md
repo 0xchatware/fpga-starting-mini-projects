@@ -114,6 +114,8 @@ Same as [Pattern with HDMI 480p](#3---patterns-with-hdmi-at-480p), but with 720p
 
 A simple pong game against a boot. To reset the game toggle SW1 on the FPGA.
 
+https://github.com/user-attachments/assets/09459296-7057-4081-8110-78d0a2bcf719
+
 ### 7 - Text Overlay with HDMI at 720p
 
 Displaying a character on the screen.
