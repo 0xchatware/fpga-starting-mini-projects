@@ -9,12 +9,18 @@ set_property -dict { PACKAGE_PIN K19   IOSTANDARD TMDS_33  } [get_ports { o_hdmi
 set_property -dict { PACKAGE_PIN H18   IOSTANDARD TMDS_33  } [get_ports { o_hdmi_tx_n[2] }]; #IO_L14N_T2_AD4N_SRCC_35 Sch=hdmi_tx_d_n[2]
 set_property -dict { PACKAGE_PIN J18   IOSTANDARD TMDS_33  } [get_ports { o_hdmi_tx_p[2] }]; #IO_L14P_T2_AD4P_SRCC_35 Sch=hdmi_tx_d_p[2]
 
+set_property -dict { PACKAGE_PIN M20   IOSTANDARD LVCMOS33 } [get_ports { i_sw[0] }]; #IO_L7N_T1_AD2N_35 Sch=sw[0]
+set_property -dict { PACKAGE_PIN M19   IOSTANDARD LVCMOS33 } [get_ports { i_sw[1] }]; #IO_L7P_T1_AD2P_35 Sch=sw[1]
+
 set_clock_groups -asynchronous \
   -group [list \
      [get_clocks -of_objects [get_pins Clk_Generator_Inst/o_clk_25MHz]] \
      [get_clocks -of_objects [get_pins Clk_Generator_Inst/o_clk_125MHz]]] \
   -group [get_clocks -of_objects [ get_pins Clk_Generator_Inst/i_clk]];
-
+  
 set fwclk        [filter [get_clocks -of_objects [get_cells TMDS_Red_Serializer]] {name =~ *125*}];     # forwarded clock name (generated using create_generated_clock at output clock port)        
 set output_ports  {o_hdmi_tx_*};   # list of output ports
 set_output_delay -clock $fwclk 1.0 [get_ports $output_ports];
+
+set_false_path -from $fwclk -to [get_ports $output_ports];
+set_false_path -to [get_ports {i_sw[*]}] -from [get_ports {i_sys_clk}];

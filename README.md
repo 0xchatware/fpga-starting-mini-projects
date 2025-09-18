@@ -47,23 +47,19 @@ In order to start Synthesis, Implementation and Bitstream Generation for the rig
 | Text Patterns with HDMI at 720p    | [Test_Pattern_720p_Top.sv](rtl/Test_Pattern_720p_Top.sv)               | [constrs_test_pattern_720p](cons/test_pattern_constraints.xdc)    |
 | CORDIC Algorithm with HDMI at 720p | [CORDIC_Algorithm_HDMI_Top.sv](rtl/CORDIC_Algorithm_HDMI_Top.sv)       | [constrs_cordic_algorithm_hdmi](cons/cordic_algorithm_hdmi.xdc)   |
 
-### Blinking Led at 1 Hz
+### 1 - Blinking Led at 1 Hz
 
 Using a clock enable for making a LED blink 1 second at a time.
 
-### Counter with Seven Segments
+### 2 - Counter with Seven Segments
 
 Using FPGAs PMOD and connect it to LEDs to mimick a SevenSegment. 
 
 Clock enabled logic of the previous project helped building the counter.
 
-### Patterns with HDMI at 480p
+### 3 - Patterns with HDMI at 480p
 
 Displayed different patterns with the help of an HDMI module I made.
-
-### Square Pattern with HDMI at 720p
-
-Displaying a white square, but with a resolution of 720p.
 
 | SW1 | SW2 | OUTPUT              |
 |-----|-----|---------------------|
@@ -72,24 +68,81 @@ Displaying a white square, but with a resolution of 720p.
 | 1   | 0   | Ombre Pattern       |
 | 1   | 1   | Multicolour Pattern |
 
-### Pong Game with HDMI at 720p
+#### Pink Colour Pattern
+
+![](img/pink_480p.jpg)
+
+#### Cross Pattern
+
+![](img/cross_480p.jpg)
+
+#### Ombre Pattern
+
+![](img/ombre_480p.jpg)
+
+#### Multicolour Pattern
+
+![](img/multicolour_480p.jpg)
+
+### 4 - Square Pattern with HDMI at 720p
+
+Displaying a white square, but with a resolution of 720p.
+
+![](img/white_square_720p.jpg)
+
+### 5 - Test Patterns with HDMI at 720p
+
+Same as [Pattern with HDMI 480p](#3---patterns-with-hdmi-at-480p), but with 720p.
+
+#### Pink Colour Pattern
+
+![](img/pink_720p.jpg)
+
+#### Cross Pattern
+
+![](img/cross_720p.jpg)
+
+#### Ombre Pattern
+
+![](img/ombre_720p.jpg)
+
+#### Multicolour Pattern
+
+![](img/multicolour_720p.jpg)
+
+### 6 - Pong Game with HDMI at 720p
 
 A simple pong game against a boot. To reset the game toggle SW1 on the FPGA.
 
-### Text Overlay with HDMI at 720p
+### 7 - Text Overlay with HDMI at 720p
 
 Displaying a character on the screen.
 
-### Text Patterns with HDMI at 720p
+![](img/pong_demo.mp4)
 
-Displaying a character buffer on the screen.
+#### Version 1
 
-### CORDIC Algorithm with HDMI at 720p
+![](img/text_overlay.jpg)
+
+#### Version 2
+
+![](img/text_overlay_v2.jpg)
+
+### 8 - CORDIC Algorithm with HDMI at 720p
 
 Implemented all CORDIC operations with fixed values. 
 
-Not all operations are displayed on the screen yet.
+Not all operations are displayed on the screen yet, work in progress.
+
+#### Displayed Cos Only
+
+![](img/cordic_algorithm_cos_only.jpg)
 
 ## Resources
 
 - How to setup Vivado with git: https://github.com/jhallen/vivado_setup
+- www.xilinx.com/publications/archives/xcell/Xcell79.pdf
+- https://digitalsystemdesign.in/wp-content/uploads/2019/01/cordic1.pdf
+- https://www.secs.oakland.edu/~llamocca/Courses/ECE5736/S22/FinalProject/Group3_hypcordic.pdf
+- https://en.wikibooks.org/wiki/Digital_Circuits/CORDIC
+- https://fpga.mit.edu/6205/F24/assignments/hdmi

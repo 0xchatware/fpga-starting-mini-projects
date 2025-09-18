@@ -22,6 +22,7 @@
 
 module Square_Pattern_Hdmi_480p_Top(
     input i_sys_clk,
+    input [1:0] i_sw,
     output [2:0] o_hdmi_tx_p,
     output [2:0] o_hdmi_tx_n,
     output o_hdmi_clk_p,
@@ -76,16 +77,16 @@ module Square_Pattern_Hdmi_480p_Top(
         .o_nf(),
         .o_fc());
     
-    logic v_square;
     logic [COLOUR_BITS-1:0] v_paint_r, v_paint_g, v_paint_b;
-    always_comb begin
-        v_square = (w_sx > 220 && w_sx < 420) && (w_sy > 140 && w_sy < 340);
+//    logic v_square;
+//    always_comb begin
+//        v_square = (w_sx > 220 && w_sx < 420) && (w_sy > 140 && w_sy < 340);
         
-        // White outside the square, blue inside the square.
-        v_paint_r = (v_square) ? 8'hFF : 8'h00;
-        v_paint_g = (v_square) ? 8'hFF : 8'h00;
-        v_paint_b = (v_square) ? 8'hFF : 8'h8B;
-    end
+//        // White outside the square, blue inside the square.
+//        v_paint_r = (v_square) ? 8'hFF : 8'h00;
+//        v_paint_g = (v_square) ? 8'hFF : 8'h00;
+//        v_paint_b = (v_square) ? 8'hFF : 8'h8B;
+//    end
 
     Test_Pattern_Generator#(.TOTAL_COLUMNS(800),
                             .TOTAL_ROWS(525)) Test_Pattern_Inst(
